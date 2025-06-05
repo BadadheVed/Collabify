@@ -1,0 +1,22 @@
+{
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.9",
+    "prisma": "^6.9.0",
+    "tsconfig-paths": "^4.2.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemon": "^3.1.10",
+    "zod": "^3.25.49"
+  },
+  "scripts": {
+  "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts"
+}
+}
