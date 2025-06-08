@@ -39,11 +39,15 @@ model User {
   sentInvites     Invite[]       @relation("SentInvites")
   receivedInvites Invite[]       @relation("ReceivedInvite")
   createdAt       DateTime       @default(now())
+  Team            Team[]
+  Invite          Invite[]
 }
 
 model Team {
   id        String       @id @default(cuid())
   name      String
+  createdBy String
+  creator   User         @relation(fields: [createdBy], references: [id])
   projects  Project[]
   members   TeamMember[]
   invites   Invite[]
@@ -51,15 +55,15 @@ model Team {
 }
 
 model TeamMember {
-  id        String   @id @default(cuid())
-  team      Team     @relation(fields: [teamId], references: [id])
-  teamId    String
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  role      Role     @default(MEMBER)
-  createdAt DateTime @default(now())
+  id       String   @id @default(cuid())
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String
+  team     Team     @relation(fields: [teamId], references: [id])
+  teamId   String
+  role     Role     @default(MEMBER)
+  joinedAt DateTime @default(now())
 
-  @@unique([teamId, userId])
+  @@unique([userId, teamId])
 }
 
 model Project {
@@ -119,8 +123,8 @@ model Notification {
 model Invite {
   id            String   @id @default(cuid())
   token         String   @unique
-  email         String // Invite sent to this email
-  role          Role     @default(MEMBER) // Role to assign on acceptance
+  email          String? // Invite sent to this email
+  role           Role     @default(MEMBER) // Role to assign on acceptance
   team          Team     @relation(fields: [teamId], references: [id])
   teamId        String
   invitedBy     User     @relation("SentInvites", fields: [invitedById], references: [id])
@@ -130,6 +134,8 @@ model Invite {
   expiresAt     DateTime
   used          Boolean  @default(false)
   createdAt     DateTime @default(now())
+  User          User?    @relation(fields: [userId], references: [id])
+  userId        String?
 }
 
 model ActivityLog {

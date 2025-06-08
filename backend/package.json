@@ -11,12 +11,14 @@
     "@prisma/client": "^6.9.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
+    "crypto": "^1.0.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.1.5",
     "nodemon": "^3.1.10",
     "zod": "^3.25.49"
   },
   "scripts": {
-  "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts"
-}
+    "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts"
+  }
 }

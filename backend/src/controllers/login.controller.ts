@@ -106,7 +106,12 @@ export const SignUp: RequestHandler = async (req: Request, res: Response) => {
       });
       return;
     }
-
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
     res.status(201).json({
       token: token,
       message: "Sign Up Successful",
