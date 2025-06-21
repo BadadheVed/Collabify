@@ -8,9 +8,9 @@
     "allowJs": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",               // 👈 Enables absolute imports
+    "baseUrl": ".",               
     "paths": {
-      "@/*": ["src/*"]            // 👈 Use @/ for anything inside src/
+      "@/*": ["src/*"]            
     },
     "outDir": "dist"
   },

@@ -41,6 +41,8 @@ model User {
   createdAt       DateTime       @default(now())
   Team            Team[]
   Invite          Invite[]
+  Project         Project[]
+  Task            Task[]
 }
 
 model Team {
@@ -69,28 +71,34 @@ model TeamMember {
 model Project {
   id          String        @id @default(cuid())
   name        String
+  description String?
   team        Team          @relation(fields: [teamId], references: [id])
   teamId      String
-  tasks       Task[]
+  createdBy   User          @relation(fields: [createdById], references: [id])
+  createdById String
   createdAt   DateTime      @default(now())
+  Task        Task[]
   ActivityLog ActivityLog[]
+  Document    Document[]
 }
 
 model Task {
-  id          String       @id @default(cuid())
-  title       String
-  description String?
-  status      TaskStatus   @default(TODO)
-  priority    Int          @default(1)
-  dueDate     DateTime?
-  assignee    User?        @relation("AssignedTasks", fields: [assigneeId], references: [id])
-  assigneeId  String?
-  project     Project      @relation(fields: [projectId], references: [id])
-  projectId   String
-  comments    Comment[]
-  attachments Attachment[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id           String       @id @default(cuid())
+  title        String
+  description  String?
+  status       TaskStatus   @default(TODO)
+  priority     Int          @default(1)
+  dueDate      DateTime?
+  assignee     User?        @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  assigneeId   String?
+  project      Project      @relation(fields: [projectId], references: [id])
+  projectId    String
+  assignedTo   User         @relation(fields: [assignedToId], references: [id])
+  assignedToId String
+  comments     Comment[]
+  attachments  Attachment[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 model Attachment {
@@ -118,13 +126,14 @@ model Notification {
   userId    String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+  expiresAt DateTime 
 }
 
 model Invite {
   id            String   @id @default(cuid())
   token         String   @unique
-  email          String? // Invite sent to this email
-  role           Role     @default(MEMBER) // Role to assign on acceptance
+  email         String? // Invite sent to this email
+  role          Role     @default(MEMBER) // Role to assign on acceptance
   team          Team     @relation(fields: [teamId], references: [id])
   teamId        String
   invitedBy     User     @relation("SentInvites", fields: [invitedById], references: [id])
@@ -147,5 +156,15 @@ model ActivityLog {
   projectId String?
   targetId  String // Could be Task ID, Comment ID, etc.
   details   String? // Optional details or JSON string
+  createdAt DateTime @default(now())
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  title     String
+  content   Json? // tiptap content in JSON 
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
