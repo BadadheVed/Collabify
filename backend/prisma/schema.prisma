@@ -26,34 +26,52 @@ enum TaskStatus {
 }
 
 model User {
-  id              String         @id @default(cuid())
-  email           String         @unique
+  id              String          @id @default(cuid())
+  email           String          @unique
   password        String
   name            String
-  role            Role           @default(MEMBER)
+  role            Role            @default(MEMBER)
   teams           TeamMember[]
-  tasks           Task[]         @relation("AssignedTasks")
+  tasks           Task[]          @relation("AssignedTasks")
   comments        Comment[]
   notifications   Notification[]
   activityLogs    ActivityLog[]
-  sentInvites     Invite[]       @relation("SentInvites")
-  receivedInvites Invite[]       @relation("ReceivedInvite")
-  createdAt       DateTime       @default(now())
+  sentInvites     Invite[]        @relation("SentInvites")
+  receivedInvites Invite[]        @relation("ReceivedInvite")
+  createdAt       DateTime        @default(now())
   Team            Team[]
   Invite          Invite[]
   Project         Project[]
   Task            Task[]
+  documents       Document[]      @relation("UserDocuments")
+  ProjectMember   ProjectMember[]
 }
 
 model Team {
-  id        String       @id @default(cuid())
+  id        String @id @default(cuid())
   name      String
   createdBy String
-  creator   User         @relation(fields: [createdBy], references: [id])
-  projects  Project[]
+  creator   User   @relation(fields: [createdBy], references: [id])
+
+  projectId String // ✅ FK to Project
+  project   Project @relation(fields: [projectId], references: [id])
+
   members   TeamMember[]
   invites   Invite[]
+  documents Document[] // ✅ Add this - One team can have many documents
   createdAt DateTime     @default(now())
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+  role      Role     @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  @@unique([userId, projectId])
 }
 
 model TeamMember {
@@ -69,17 +87,18 @@ model TeamMember {
 }
 
 model Project {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String?
-  team        Team          @relation(fields: [teamId], references: [id])
-  teamId      String
-  createdBy   User          @relation(fields: [createdById], references: [id])
+  createdBy   User     @relation(fields: [createdById], references: [id])
   createdById String
-  createdAt   DateTime      @default(now())
+  createdAt   DateTime @default(now())
+
   Task        Task[]
   ActivityLog ActivityLog[]
-  Document    Document[]
+
+  teams         Team[] // ✅ One project ➝ many teams
+  ProjectMember ProjectMember[]
 }
 
 model Task {
@@ -126,7 +145,7 @@ model Notification {
   userId    String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
-  expiresAt DateTime 
+  expiresAt DateTime
 }
 
 model Invite {
@@ -162,9 +181,11 @@ model ActivityLog {
 model Document {
   id        String   @id @default(uuid())
   title     String
-  content   Json? // tiptap content in JSON 
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id])
+  content   Json?
+  teamId    String // ✅ Change from projectId to teamId
+  team      Team     @relation(fields: [teamId], references: [id]) // ✅ Reference Team instead of Project
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+  ownerId   String
+  owner     User     @relation("UserDocuments", fields: [ownerId], references: [id])
 }

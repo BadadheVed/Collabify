@@ -1,13 +1,19 @@
 import { db } from "@/DB_Client/db";
 import { Request, RequestHandler, Response } from "express";
-//POST /projects/:projectId/documents
+
+// POST /teams/:teamId/documents - Create document in a specific team
 export const createDocument: RequestHandler = async (
   req: Request,
   res: Response
 ) => {
-  const { projectId } = req.params;
+  const { teamId } = req.params;
   const { title } = req.body;
   const userId = req.user?.id;
+
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
 
   if (!title) {
     res.status(400).json({ message: "Title is required" });
@@ -15,35 +21,51 @@ export const createDocument: RequestHandler = async (
   }
 
   try {
-    const project = await db.project.findUnique({
-      where: { id: projectId },
-      include: { team: true },
-    });
-
-    if (!project) {
-      res.status(404).json({ message: "Project not found" });
-      return;
-    }
-
-    const member = await db.teamMember.findFirst({
+    // Check if the user is a member of the team
+    const teamMember = await db.teamMember.findFirst({
       where: {
         userId,
-        teamId: project.teamId,
+        teamId,
+      },
+      include: {
+        team: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
-    if (!member) {
-      res
-        .status(403)
-        .json({ message: "You do not have access to this project." });
+    if (!teamMember) {
+      res.status(403).json({
+        message: "You are not a member of this team.",
+      });
       return;
     }
 
+    // Create the document
     const newDoc = await db.document.create({
       data: {
         title,
-        content: {}, // or null if you prefer
-        projectId,
+        content: {}, // empty object by default
+        teamId,
+        ownerId: userId,
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        team: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -58,21 +80,32 @@ export const createDocument: RequestHandler = async (
     return;
   }
 };
-//  Get a specific document (for loading into the editor).
-export const getDocumentById: RequestHandler = async (
-  req: Request,
-  res: Response
-) => {
+
+// GET /documents/:id - Get a specific document
+export const getDocumentById: RequestHandler = async (req, res) => {
   const { id } = req.params;
   const userId = req.user?.id;
+
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
 
   try {
     const document = await db.document.findUnique({
       where: { id },
       include: {
-        project: {
-          include: {
-            team: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        team: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
@@ -83,10 +116,11 @@ export const getDocumentById: RequestHandler = async (
       return;
     }
 
+    // Check if the user is a member of the team that owns this document
     const isMember = await db.teamMember.findFirst({
       where: {
-        teamId: document.project.teamId,
         userId,
+        teamId: document.teamId,
       },
     });
 
@@ -105,7 +139,80 @@ export const getDocumentById: RequestHandler = async (
     return;
   }
 };
-// router.get("/projects/:projectId/documents", checkAuth, getDocumentsByProject);
+
+// GET /teams/:teamId/documents - Get all documents for a specific team
+export const getDocumentsByTeam: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
+  const { teamId } = req.params;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  try {
+    // First verify the team exists and user is a member
+    const teamMember = await db.teamMember.findFirst({
+      where: {
+        userId,
+        teamId,
+      },
+      include: {
+        team: {
+          select: {
+            id: true,
+            name: true,
+            project: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!teamMember) {
+      res.status(403).json({
+        message: "You are not a member of this team or team does not exist",
+      });
+      return;
+    }
+
+    // Get all documents for this specific team
+    const documents = await db.document.findMany({
+      where: {
+        teamId: teamId,
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    res.status(200).json({
+      documents,
+      team: teamMember.team,
+    });
+    return;
+  } catch (error) {
+    console.error("Error fetching documents by team:", error);
+    res.status(500).json({ message: "Server error" });
+    return;
+  }
+};
+
+// GET /projects/:projectId/documents - Get all documents for all teams in a project
 export const getDocumentsByProject: RequestHandler = async (
   req: Request,
   res: Response
@@ -113,9 +220,23 @@ export const getDocumentsByProject: RequestHandler = async (
   const { projectId } = req.params;
   const userId = req.user?.id;
 
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
   try {
+    // Get the project and its associated teams
     const project = await db.project.findUnique({
       where: { id: projectId },
+      include: {
+        teams: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
 
     if (!project) {
@@ -123,10 +244,16 @@ export const getDocumentsByProject: RequestHandler = async (
       return;
     }
 
+    // Extract all team IDs related to the project
+    const projectTeamIds = project.teams.map((team) => team.id);
+
+    // Check if the user is a member of any of the project's teams
     const isMember = await db.teamMember.findFirst({
       where: {
-        teamId: project.teamId,
         userId,
+        teamId: {
+          in: projectTeamIds,
+        },
       },
     });
 
@@ -135,12 +262,39 @@ export const getDocumentsByProject: RequestHandler = async (
       return;
     }
 
+    // Get all documents from all teams in this project
     const documents = await db.document.findMany({
-      where: { projectId },
+      where: {
+        teamId: {
+          in: projectTeamIds,
+        },
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        team: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
       orderBy: { updatedAt: "desc" },
     });
 
-    res.status(200).json({ documents });
+    res.status(200).json({
+      documents,
+      project: {
+        id: project.id,
+        name: project.name,
+        teams: project.teams,
+      },
+    });
     return;
   } catch (error) {
     console.error("Error:", error);
@@ -149,8 +303,7 @@ export const getDocumentsByProject: RequestHandler = async (
   }
 };
 
-// router.patch("/documents/:id", checkAuth, updateDocumentContent);
-
+// PATCH /documents/:id - Update document content
 export const SaveDocument: RequestHandler = async (
   req: Request,
   res: Response
@@ -159,11 +312,21 @@ export const SaveDocument: RequestHandler = async (
   const { content } = req.body;
   const userId = req.user?.id;
 
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
   try {
     const document = await db.document.findUnique({
       where: { id },
       include: {
-        project: { include: { team: true } },
+        team: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -172,10 +335,11 @@ export const SaveDocument: RequestHandler = async (
       return;
     }
 
+    // Check if the user is a member of the team that owns this document
     const isMember = await db.teamMember.findFirst({
       where: {
-        teamId: document.project.teamId,
         userId,
+        teamId: document.teamId,
       },
     });
 
@@ -184,12 +348,30 @@ export const SaveDocument: RequestHandler = async (
       return;
     }
 
-    await db.document.update({
+    const updatedDocument = await db.document.update({
       where: { id },
       data: { content },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        team: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
 
-    res.status(200).json({ message: "Document updated" });
+    res.status(200).json({
+      message: "Document updated successfully",
+      document: updatedDocument,
+    });
     return;
   } catch (error) {
     console.error("Error updating document:", error);
@@ -198,16 +380,26 @@ export const SaveDocument: RequestHandler = async (
   }
 };
 
-// router.delete("/documents/:id", checkAuth, deleteDocument);
-export const deleteDocument:RequestHandler = async (req: Request, res: Response) => {
+// DELETE /documents/:id - Delete a document
+export const deleteDocument: RequestHandler = async (req, res) => {
   const { id } = req.params;
   const userId = req.user?.id;
+
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
 
   try {
     const document = await db.document.findUnique({
       where: { id },
       include: {
-        project: { include: { team: true } },
+        team: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -216,10 +408,11 @@ export const deleteDocument:RequestHandler = async (req: Request, res: Response)
       return;
     }
 
+    // Check if the user is a member of the team that owns this document
     const isMember = await db.teamMember.findFirst({
       where: {
-        teamId: document.project.teamId,
         userId,
+        teamId: document.teamId,
       },
     });
 
@@ -228,7 +421,24 @@ export const deleteDocument:RequestHandler = async (req: Request, res: Response)
       return;
     }
 
-    await db.document.delete({ where: { id } });
+    // Optional: Only allow document owner or team admin to delete
+    // const teamMember = await db.teamMember.findFirst({
+    //   where: {
+    //     userId,
+    //     teamId: document.teamId,
+    //   },
+    // });
+
+    // if (document.ownerId !== userId && teamMember?.role !== "ADMIN") {
+    //   res.status(403).json({
+    //     message: "Only document owner or team admin can delete this document"
+    //   });
+    //   return;
+    // }
+
+    await db.document.delete({
+      where: { id },
+    });
 
     res.status(200).json({ message: "Document deleted successfully" });
     return;

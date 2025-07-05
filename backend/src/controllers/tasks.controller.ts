@@ -1,139 +1,272 @@
 import { db } from "@/DB_Client/db";
 import { Request, Response } from "express";
 import { RequestHandler } from "express";
-export const createTasks: RequestHandler = async (
-  req: Request,
-  res: Response
-) => {
+
+export const createAndAssignTask: RequestHandler = async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { projectId } = req.body;
-    const { title, description, dueDate, assignedToId } = req.body;
-    if (!userId || !projectId || !title) {
+    const { title, description, dueDate, teamId, assignedToId } = req.body;
+
+    if (!userId || !title || !teamId || !assignedToId) {
       res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: "Missing required fields (title, teamId, assignedToId)",
       });
       return;
     }
-    const project = await db.project.findUnique({
-      where: { id: projectId },
-      select: { teamId: true },
+
+    // Get team with its project info
+    const team = await db.team.findUnique({
+      where: { id: teamId },
+      include: { project: true },
     });
 
-    if (!project) {
+    if (!team) {
       res.status(404).json({
         success: false,
-        message: "Project not found",
+        message: "Team not found",
       });
       return;
     }
 
-    const member = await db.teamMember.findFirst({
+    // Check if the user is an Admin or Manager in this specific team
+    const isAdminOrManager = await db.teamMember.findFirst({
       where: {
-        teamId: project.teamId,
         userId,
+        teamId,
+        role: {
+          in: ["ADMIN", "MANAGER"],
+        },
       },
     });
 
-    if (!member || (member.role !== "ADMIN" && member.role !== "MANAGER")) {
+    if (!isAdminOrManager) {
       res.status(403).json({
         success: false,
-        message: "Only Admin or Manager can create tasks",
+        message: "Only Admin or Manager can create tasks in this team",
       });
       return;
     }
+
+    // Ensure the assigned user is part of this team
+    const targetMember = await db.teamMember.findFirst({
+      where: { teamId, userId: assignedToId },
+    });
+
+    if (!targetMember) {
+      res.status(400).json({
+        success: false,
+        message: "Assigned user is not a member of this team",
+      });
+      return;
+    }
+
+    // Create and assign the task
     const task = await db.task.create({
       data: {
         title,
         description,
-        assigneeId: userId,
         dueDate: dueDate ? new Date(dueDate) : undefined,
+        projectId: team.projectId, // Get projectId from team
         assignedToId,
-        projectId,
+        assigneeId: userId, // creator of the task
       },
     });
 
     res.status(201).json({
       success: true,
+      message: "Task created and assigned successfully",
       task,
     });
     return;
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error creating and assigning task:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
     return;
   }
 };
 
-export const getTasksForProject: RequestHandler = async (
-  req: Request,
-  res: Response
-) => {
+// get tasks for a specific team
+export const getTasksForTeam: RequestHandler = async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { projectId } = req.params;
+    const { teamId } = req.params;
 
-    const project = await db.project.findUnique({
-      where: { id: projectId },
-      select: { teamId: true },
-    });
-    if (!project) {
-      res.status(404).json({ success: false, message: "Project not found" });
+    if (!userId || !teamId) {
+      res.status(400).json({
+        success: false,
+        message: "Missing teamId or unauthorized",
+      });
       return;
     }
 
+    // Get team with its project info
+    const team = await db.team.findUnique({
+      where: { id: teamId },
+      include: { project: true },
+    });
+
+    if (!team) {
+      res.status(404).json({ success: false, message: "Team not found" });
+      return;
+    }
+
+    // Check if the user is an Admin/Manager in this specific team
     const member = await db.teamMember.findFirst({
-      where: { teamId: project.teamId, userId },
+      where: {
+        teamId,
+        userId,
+        role: {
+          in: ["ADMIN", "MANAGER"],
+        },
+      },
     });
+
     if (!member) {
-      res.status(403).json({ success: false, message: "Unauthorized" });
+      res.status(403).json({
+        success: false,
+        message: "Only Admin or Manager can view tasks of this team",
+      });
       return;
     }
 
+    // Fetch tasks for this team (tasks belong to project, but we filter by team members)
     const tasks = await db.task.findMany({
-      where: { projectId },
+      where: {
+        projectId: team.projectId,
+        assignedTo: {
+          teams: {
+            some: {
+              teamId: teamId,
+            },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        dueDate: true,
+        status: true,
+        priority: true,
+        createdAt: true,
+        updatedAt: true,
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
 
-    res.status(200).json({ success: true, tasks });
+    res.status(200).json({
+      success: true,
+      tasks,
+    });
     return;
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error fetching tasks:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
     return;
   }
 };
 
 // PATCH /api/tasks/:taskId
-export const updateTask: RequestHandler = async (
-  req: Request,
-  res: Response
-) => {
+export const updateTask: RequestHandler = async (req, res) => {
   try {
     const userId = req.user?.id;
     const { taskId } = req.params;
     const { title, description, status, priority, dueDate, assignedToId } =
       req.body;
 
-    const task = await db.task.findUnique({
-      where: { id: taskId },
-      include: { project: { select: { teamId: true } } },
-    });
-
-    if (!task) {
-      res.status(404).json({ success: false, message: "Task not found" });
+    if (!userId || !taskId) {
+      res.status(400).json({
+        success: false,
+        message: "Missing taskId or unauthorized",
+      });
       return;
     }
 
-    const member = await db.teamMember.findFirst({
-      where: { teamId: task.project.teamId, userId },
+    // Get the task along with its project and project.teams
+    const task = await db.task.findUnique({
+      where: { id: taskId },
+      include: {
+        project: {
+          include: {
+            teams: true,
+          },
+        },
+        assignedTo: {
+          include: {
+            teams: true,
+          },
+        },
+      },
     });
 
-    if (!member || (member.role !== "ADMIN" && member.role !== "MANAGER")) {
-      res.status(403).json({
+    if (!task) {
+      res.status(404).json({
         success: false,
-        message: "Only Admin or Manager can update tasks",
+        message: "Task not found",
       });
       return;
+    }
+
+    // Find which team the assigned user belongs to in this project
+    const assignedUserTeam = task.assignedTo.teams.find((teamMember) =>
+      task.project.teams.some(
+        (projectTeam) => projectTeam.id === teamMember.teamId
+      )
+    );
+
+    if (!assignedUserTeam) {
+      res.status(400).json({
+        success: false,
+        message: "Task's assigned user is not part of any team in this project",
+      });
+      return;
+    }
+
+    // Check if the user is a member of the same team as the assigned user
+    const isTeamMember = await db.teamMember.findFirst({
+      where: {
+        userId,
+        teamId: assignedUserTeam.teamId,
+      },
+    });
+
+    if (!isTeamMember) {
+      res.status(403).json({
+        success: false,
+        message: "You are not a member of the team that owns this task",
+      });
+      return;
+    }
+
+    // Validate assignedToId only if it's being changed
+    if (assignedToId) {
+      const isAssignedUserInSameTeam = await db.teamMember.findFirst({
+        where: {
+          userId: assignedToId,
+          teamId: assignedUserTeam.teamId,
+        },
+      });
+
+      if (!isAssignedUserInSameTeam) {
+        res.status(400).json({
+          success: false,
+          message: "Assigned user is not part of the same team",
+        });
+        return;
+      }
     }
 
     const updatedTask = await db.task.update({
@@ -144,138 +277,115 @@ export const updateTask: RequestHandler = async (
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate) : undefined,
-        assignedToId,
+        assignedToId: assignedToId || undefined,
       },
     });
 
-    res.status(200).json({ success: true, task: updatedTask });
+    res.status(200).json({
+      success: true,
+      message: "Task updated successfully",
+      task: updatedTask,
+    });
     return;
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error updating task:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
     return;
   }
 };
 
 // DELETE /api/tasks/:taskId
-export const deleteTask: RequestHandler = async (
-  req: Request,
-  res: Response
-) => {
+export const deleteTask: RequestHandler = async (req, res) => {
   try {
     const userId = req.user?.id;
     const { taskId } = req.params;
 
-    const task = await db.task.findUnique({
-      where: { id: taskId },
-      include: { project: { select: { teamId: true } } },
-    });
-
-    if (!task) {
-      res.status(404).json({ success: false, message: "Task not found" });
+    if (!userId || !taskId) {
+      res.status(400).json({
+        success: false,
+        message: "Missing taskId or unauthorized",
+      });
       return;
     }
 
-    const member = await db.teamMember.findFirst({
-      where: { teamId: task.project.teamId, userId },
+    const task = await db.task.findUnique({
+      where: { id: taskId },
+      include: {
+        project: {
+          include: { teams: true },
+        },
+        assignedTo: {
+          include: {
+            teams: true,
+          },
+        },
+      },
     });
 
-    if (!member || (member.role !== "ADMIN" && member.role !== "MANAGER")) {
+    if (!task) {
+      res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
+      return;
+    }
+
+    // Find which team the assigned user belongs to in this project
+    const assignedUserTeam = task.assignedTo.teams.find((teamMember) =>
+      task.project.teams.some(
+        (projectTeam) => projectTeam.id === teamMember.teamId
+      )
+    );
+
+    if (!assignedUserTeam) {
+      res.status(400).json({
+        success: false,
+        message: "Task's assigned user is not part of any team in this project",
+      });
+      return;
+    }
+
+    // Check if the user is an Admin or Manager in the same team as the assigned user
+    const isAdminOrManager = await db.teamMember.findFirst({
+      where: {
+        userId,
+        teamId: assignedUserTeam.teamId,
+        role: {
+          in: ["ADMIN", "MANAGER"],
+        },
+      },
+    });
+
+    if (!isAdminOrManager) {
       res.status(403).json({
         success: false,
-        message: "Only Admin or Manager can delete tasks",
+        message: "Only Admin or Manager can delete tasks in this team",
       });
       return;
     }
 
     await db.task.delete({ where: { id: taskId } });
 
-    res.status(200).json({ success: true, message: "Task deleted" });
-    return;
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
-    return;
-  }
-};
-
-// get all tasks for the project with the help of the projectId
-// GET /api/tasks/:projectId
-export const GetTasks: RequestHandler = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.id;
-    const { projectId } = req.params;
-    if (!userId || !projectId) {
-      res.status(400).json({
-        success: false,
-        message: "Missing projectId or unauthorized",
-      });
-      return;
-    }
-    const project = await db.project.findFirst({
-      where: { id: projectId },
-      select: { teamId: true },
-    });
-    if (!project) {
-      res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
-      return;
-    }
-
-    const isMember = await db.teamMember.findFirst({
-      where: {
-        teamId: project.teamId,
-        userId,
-      },
-    });
-    if (!isMember) {
-      res.status(403).json({
-        success: false,
-        message: "You are not authorized to view tasks for this project",
-      });
-      return;
-    }
-
-    const tasks = await db.task.findMany({
-      where: { projectId },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        priority: true,
-        dueDate: true,
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
     res.status(200).json({
       success: true,
-      tasks,
+      message: "Task deleted successfully",
     });
     return;
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
+  } catch (err) {
+    console.error("Error deleting task:", err);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error",
+      message: "Internal server error",
     });
     return;
   }
 };
 
 // PATCH /tasks/status/:taskId
-
-export const ChangeStatus: RequestHandler = async (
-  req: Request,
-  res: Response
-) => {
+export const ChangeStatus: RequestHandler = async (req, res) => {
   try {
     const { taskId } = req.params;
     const userId = req.user?.id;
@@ -288,18 +398,25 @@ export const ChangeStatus: RequestHandler = async (
       });
       return;
     }
-    // find the task
+
+    // Fetch task with assigned user and project teams
     const task = await db.task.findUnique({
       where: { id: taskId },
-      select: {
-        id: true,
+      include: {
         project: {
+          include: {
+            teams: true,
+          },
+        },
+        assignedTo: {
           select: {
-            teamId: true,
+            id: true,
+            teams: true,
           },
         },
       },
     });
+
     if (!task) {
       res.status(404).json({
         success: false,
@@ -308,17 +425,38 @@ export const ChangeStatus: RequestHandler = async (
       return;
     }
 
-    const isMember = await db.teamMember.findFirst({
+    // Find which team the assigned user belongs to in this project
+    const assignedUserTeam = task.assignedTo.teams.find((teamMember) =>
+      task.project.teams.some(
+        (projectTeam) => projectTeam.id === teamMember.teamId
+      )
+    );
+
+    if (!assignedUserTeam) {
+      res.status(400).json({
+        success: false,
+        message: "Task's assigned user is not part of any team in this project",
+      });
+      return;
+    }
+
+    const isAssignedUser = task.assignedTo?.id === userId;
+
+    const isAdminOrManager = await db.teamMember.findFirst({
       where: {
         userId,
-        teamId: task.project.teamId,
+        teamId: assignedUserTeam.teamId,
+        role: {
+          in: ["ADMIN", "MANAGER"],
+        },
       },
     });
 
-    if (!isMember) {
+    if (!isAssignedUser && !isAdminOrManager) {
       res.status(403).json({
         success: false,
-        message: "You are not authorized to update this task",
+        message:
+          "Only the assigned user or an Admin/Manager of the same team can change status",
       });
       return;
     }

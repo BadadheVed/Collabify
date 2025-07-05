@@ -32,7 +32,7 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
     const payload = {
       id: User.id,
       email: User.email,
-      role: User.role,
+      name: User.name,
     };
     const token = await generateToken(payload);
     if (!token) {
@@ -50,7 +50,7 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
     });
     res.status(200).json({
       message: "Logged In Successfully",
-      role: payload.role,
+      name: payload.name,
       success: true,
     });
   } catch (error: any) {
@@ -96,7 +96,7 @@ export const SignUp: RequestHandler = async (req: Request, res: Response) => {
     const payload = {
       id: newUser.id,
       email: newUser.email,
-      role: newUser.role,
+      name: newUser.name,
     };
     const token = await generateToken(payload);
     if (!token) {
@@ -115,7 +115,7 @@ export const SignUp: RequestHandler = async (req: Request, res: Response) => {
     res.status(201).json({
       token: token,
       message: "Sign Up Successful",
-      role: payload.role,
+      name: payload.name,
       success: true,
     });
     return;

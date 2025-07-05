@@ -1,21 +1,24 @@
 import { Router } from "express";
 import {
-  createTasks,
-  getTasksForProject,
+  createAndAssignTask,
+  getTasksForTeam,
   updateTask,
   deleteTask,
-  GetTasks,
   ChangeStatus,
 } from "@/controllers/tasks.controller";
 import { getUserTasks } from "@/controllers/tasks2.controller";
-import { checkAuth, CheckRoles } from "@/middlewares/roles";
+import {
+  checkAuth,
+  CheckProjectRoles,
+  checkTeamMember,
+} from "@/middlewares/roles";
 
 const taskRouter = Router();
-taskRouter.post("/", CheckRoles(["ADMIN", "MANAGER"]), createTasks);
-taskRouter.patch("/:taskId", CheckRoles(["ADMIN", "MANAGER"]), updateTask);
-taskRouter.delete("/:taskId", CheckRoles(["ADMIN", "MANAGER"]), deleteTask);
+taskRouter.post("/create", checkAuth, createAndAssignTask);
+taskRouter.patch("/update/:taskId", checkAuth, updateTask);
+taskRouter.delete("/delete/:taskId", checkAuth, deleteTask);
 taskRouter.patch("/status/:taskId", checkAuth, ChangeStatus);
-taskRouter.get("/user/tasks", checkAuth, getUserTasks);
-taskRouter.get("/:projectId", checkAuth, getTasksForProject); // OR use GetTasks
+taskRouter.get("/user/MyTasks", checkAuth, getUserTasks);
+taskRouter.get("/all/:teamId", checkAuth, getTasksForTeam); // OR use GetTasks
 
 export default taskRouter;
