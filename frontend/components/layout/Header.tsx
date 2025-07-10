@@ -21,15 +21,6 @@ export function Header() {
         </Button>
 
         {/* User Menu */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="p-2 text-gray-400 hover:text-white hover:bg-white/10 hover:scale-105 transition-all duration-200 ease-out backdrop-blur-sm rounded-xl"
-        >
-          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 flex items-center justify-center text-white font-semibold text-xs shadow-lg shadow-purple-500/30">
-            VB
-          </div>
-        </Button>
       </div>
     </header>
   );

@@ -22,20 +22,20 @@ enum Role {
 enum TaskStatus {
   TODO
   IN_PROGRESS
-  DONE
+  COMPLETED
 }
 
 model User {
-  id              String          @id @default(cuid())
-  email           String          @unique
-  password        String
-  name            String
-  role            Role            @default(MEMBER)
-  teams           TeamMember[]
-  tasks           Task[]          @relation("AssignedTasks")
-  comments        Comment[]
-  notifications   Notification[]
-  activityLogs    ActivityLog[]
+  id       String @id @default(cuid())
+  email    String @unique
+  password String
+  name     String
+
+  teams         TeamMember[]
+  tasks         Task[]         @relation("AssignedTasks")
+  comments      Comment[]
+  notifications Notification[]
+
   sentInvites     Invite[]        @relation("SentInvites")
   receivedInvites Invite[]        @relation("ReceivedInvite")
   createdAt       DateTime        @default(now())
@@ -94,10 +94,9 @@ model Project {
   createdById String
   createdAt   DateTime @default(now())
 
-  Task        Task[]
-  ActivityLog ActivityLog[]
+  Task Task[]
 
-  teams         Team[] // ✅ One project ➝ many teams
+  teams         Team[]
   ProjectMember ProjectMember[]
 }
 
@@ -164,18 +163,6 @@ model Invite {
   createdAt     DateTime @default(now())
   User          User?    @relation(fields: [userId], references: [id])
   userId        String?
-}
-
-model ActivityLog {
-  id        String   @id @default(cuid())
-  action    String // e.g., "TASK_MOVED", "TASK_CREATED"
-  actor     User     @relation(fields: [actorId], references: [id])
-  actorId   String
-  project   Project? @relation(fields: [projectId], references: [id])
-  projectId String?
-  targetId  String // Could be Task ID, Comment ID, etc.
-  details   String? // Optional details or JSON string
-  createdAt DateTime @default(now())
 }
 
 model Document {

@@ -71,60 +71,59 @@ export const login: RequestHandler = async (req: Request, res: Response) => {
 };
 
 export const SignUp: RequestHandler = async (req: Request, res: Response) => {
-  try {
-    const { name, email, password, role } = req.body;
-    const hashedPass = await bcrypt.hash(password, await bcrypt.genSalt(10));
-    const existingUser = await db.user.findUnique({
-      where: { email: email },
-    });
+      try {
+        const { name, email, password } = req.body;
+        const hashedPass = await bcrypt.hash(password, await bcrypt.genSalt(10));
+        const existingUser = await db.user.findUnique({
+          where: { email: email },
+        });
 
-    if (existingUser) {
-      res.status(409).json({
-        success: false,
-        message: "User already exists with this email",
-      });
-      return;
-    }
-    const newUser = await db.user.create({
-      data: {
-        email: email,
-        password: hashedPass,
-        name: name,
-        role: role || "MEMBER",
-      },
-    });
-    const payload = {
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-    };
-    const token = await generateToken(payload);
-    if (!token) {
-      res.status(500).json({
-        message: "Error Generating Response",
-        success: false,
-      });
-      return;
-    }
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
-    res.status(201).json({
-      token: token,
-      message: "Sign Up Successful",
-      name: payload.name,
-      success: true,
-    });
-    return;
-  } catch (error: any) {
-    console.error("Sign in error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-    return;
-  }
+        if (existingUser) {
+          res.status(409).json({
+            success: false,
+            message: "User already exists with this email",
+          });
+          return;
+        }
+        const newUser = await db.user.create({
+          data: {
+            email: email,
+            password: hashedPass,
+            name: name,
+          },
+        });
+        const payload = {
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name,
+        };
+        const token = await generateToken(payload);
+        if (!token) {
+          res.status(500).json({
+            message: "Error Generating Response",
+            success: false,
+          });
+          return;
+        }
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+          sameSite: "lax",
+          maxAge: 24 * 60 * 60 * 1000,
+        });
+        res.status(201).json({
+          token: token,
+          message: "Sign Up Successful",
+          name: payload.name,
+          success: true,
+        });
+        return;
+      } catch (error: any) {
+        console.error("Sign in error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+        return;
+      }
 };

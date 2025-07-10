@@ -596,3 +596,40 @@ export const getAdminTeams = async (req: Request, res: Response) => {
     return;
   }
 };
+
+export const getAdminProjects = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized - User ID not found" });
+      return;
+    }
+
+    const projects = await db.project.findMany({
+      where: {
+        ProjectMember: {
+          some: {
+            userId,
+            role: {
+              in: ["ADMIN", "MANAGER"],
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      projects,
+    });
+    return;
+  } catch (error) {
+    console.error("Error fetching admin projects:", error);
+    res.status(500).json({ error: "Internal server error" });
+    return;
+  }
+};

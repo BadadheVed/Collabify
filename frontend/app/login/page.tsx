@@ -19,31 +19,39 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [showError, setShowError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setShowError(false);
+    setIsLoading(true);
 
     try {
+      console.log("Attempting login with:", { email: formData.email });
+      console.log("Backend URL:", process.env.NEXT_PUBLIC_BACKEND_URL);
+
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
         formData,
         {
-          withCredentials: true,
+          timeout: 10000, // 10 second timeout
+          withCredentials: true, // Include cookies in request
         }
       );
 
+      console.log("Login response:", res.data);
+
       if (res.data.success) {
         // Show success popup with message from backend
-        setSuccessMessage(res.data.message || "Login successful!");
+        //  setSuccessMessage(res.data.message || "Login successful!");
         setShowSuccess(true);
 
-        
+        // Navigate to dashboard after showing success message
         setTimeout(() => {
           setShowSuccess(false);
+          console.log("Navigating to dashboard...");
           router.push("/dashboard");
         }, 2000);
       } else {
@@ -52,11 +60,22 @@ export default function LoginPage() {
         setTimeout(() => setShowError(false), 3000);
       }
     } catch (error: any) {
-      const msg =
-        error.response?.data?.message || "Something went wrong during login";
+      console.error("Login error:", error);
+      let msg = "Something went wrong during login";
+
+      if (error.code === "ECONNABORTED") {
+        msg = "Request timed out. Please try again.";
+      } else if (error.response?.data?.message) {
+        msg = error.response.data.message;
+      } else if (error.message) {
+        msg = error.message;
+      }
+
       setErrorMsg(msg);
       setShowError(true);
       setTimeout(() => setShowError(false), 3000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -85,7 +104,6 @@ export default function LoginPage() {
                 <CheckCircle className="w-16 h-16 text-green-500 animate-pulse" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Success!</h3>
-              <p className="text-gray-300">{successMessage}</p>
             </div>
 
             {/* Animated Progress Bar */}
@@ -212,9 +230,10 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                Sign In
+                {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 

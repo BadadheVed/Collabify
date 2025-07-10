@@ -131,7 +131,20 @@ export const getDocumentById: RequestHandler = async (req, res) => {
       return;
     }
 
-    res.status(200).json({ document });
+    // Return the document with all fields including content
+    res.status(200).json({
+      document: {
+        id: document.id,
+        title: document.title,
+        content: document.content, // This will include the JSON content
+        teamId: document.teamId,
+        ownerId: document.ownerId,
+        createdAt: document.createdAt,
+        updatedAt: document.updatedAt,
+        owner: document.owner,
+        team: document.team,
+      },
+    });
     return;
   } catch (error) {
     console.error("Error fetching document:", error);
@@ -446,5 +459,55 @@ export const deleteDocument: RequestHandler = async (req, res) => {
     console.error("Error deleting document:", error);
     res.status(500).json({ message: "Server error" });
     return;
+  }
+};
+
+export const getUserDocuments = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const documents = await db.document.findMany({
+      where: {
+        ownerId: userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        updatedAt: true,
+        createdAt: true,
+        team: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+      },
+    });
+
+    const formattedDocuments = documents.map((d) => ({
+      id: d.id,
+      title: d.title,
+      teamId: d.team.id,
+      content: d.content,
+      teamName: d.team.name,
+      updatedAt: d.updatedAt,
+      createdAt: d.createdAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      documents: formattedDocuments,
+    });
+  } catch (error) {
+    console.error("Error fetching user documents:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };

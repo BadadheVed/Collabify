@@ -80,3 +80,8 @@
     @apply bg-background text-foreground;
   }
 }
+.ProseMirror {
+  min-height: 300px;
+  outline: none;
+  padding: 1rem;
+}

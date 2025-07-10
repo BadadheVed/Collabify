@@ -25,9 +25,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import CreateTaskPopup from "./createTaskPopUp";
 import { axiosInstance } from "@/axiosSetup/axios";
-import { parseJWTPayload, getJWTToken } from "../utils/JWTUtils";
-// Remove this import - it only works in Server Components
-// import { cookies } from "next/headers";
 
 interface Task {
   id: string;
@@ -58,11 +55,11 @@ interface CreateTaskData {
   dueDate: string;
   teamId: string;
   assignedToId: string;
-  projectId: string;
 }
 
 interface MyTasksClientProps {
   initialTasks: Task[];
+  currentUserId?: string;
 }
 
 type FilterStatus = "ALL" | "TODO" | "IN_PROGRESS" | "COMPLETED";
@@ -82,6 +79,31 @@ const getCookie = (name: string): string | undefined => {
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop()?.split(";").shift();
 };
+
+// Helper function to get JWT token from cookie
+const getJWTToken = (cookieName: string = "token"): string | null => {
+  const token = getCookie(cookieName);
+  return token || null;
+};
+
+// Helper function to parse JWT payload
+const parseJWTPayload = (token: string): any => {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Error parsing JWT payload:", error);
+    return null;
+  }
+};
+
 const isJWTExpired = (token: string): boolean => {
   const payload = parseJWTPayload(token);
   if (!payload || !payload.exp) return true;
@@ -107,7 +129,10 @@ const getValidJWTToken = (cookieName: string = "token"): string | null => {
   return token;
 };
 
-export function MyTasksClient({ initialTasks }: MyTasksClientProps) {
+export function MyTasksClient({
+  initialTasks,
+  currentUserId,
+}: MyTasksClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskPopup, setShowTaskPopup] = useState(false);
@@ -120,25 +145,16 @@ export function MyTasksClient({ initialTasks }: MyTasksClientProps) {
     "TODO" | "IN_PROGRESS" | "COMPLETED" | null
   >(null);
   const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   // Filter and Sort States
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
   const [sortOption, setSortOption] = useState<SortOption>("DUE_DATE_ASC");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
 
-  // Create task state
-  const [createTaskData, setCreateTaskData] = useState<CreateTaskData>({
-    title: "",
-    description: "",
-    dueDate: "",
-    teamId: "",
-    assignedToId: "",
-    projectId: "",
-  });
+  // Admin teams for create task
   const [adminTeams, setAdminTeams] = useState<Team[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
 
   useEffect(() => {
     setIsClient(true);
@@ -202,42 +218,22 @@ export function MyTasksClient({ initialTasks }: MyTasksClientProps) {
   const statusCounts = getStatusCounts();
 
   const loadAdminTeams = async () => {
-    console.log("FETCHING DATA");
+    console.log("FETCHING ADMIN TEAMS DATA");
     try {
       const res = await axiosInstance.get("/teams/AdminTeams");
-      console.log("DONE FETCHING DATA", res.data);
-      // Check if res.data is an array
-      if (Array.isArray(res.data)) {
-        setAdminTeams(res.data);
+      console.log("DONE FETCHING ADMIN TEAMS DATA", res.data);
+
+      // Check if the response has the expected structure
+      if (res.data.success && Array.isArray(res.data.teams)) {
+        setAdminTeams(res.data.teams);
       } else {
-        console.error("Expected an array but got:", res.data);
+        console.error("Expected teams array but got:", res.data);
         setAdminTeams([]);
       }
     } catch (error) {
       console.error("Error fetching admin teams:", error);
       setAdminTeams([]);
     }
-  };
-
-  const loadTeamMembers = async (teamId: string) => {
-    const mockMembers: TeamMember[] = [
-      {
-        id: "user-1",
-        name: "Alice Johnson",
-        email: "alice@company.com",
-      },
-      {
-        id: "user-2",
-        name: "Bob Smith",
-        email: "bob@company.com",
-      },
-      {
-        id: "user-3",
-        name: "Carol Davis",
-        email: "carol@company.com",
-      },
-    ];
-    setTeamMembers(mockMembers);
   };
 
   const getStatusDisplay = (status: string) => {
@@ -307,132 +303,134 @@ export function MyTasksClient({ initialTasks }: MyTasksClientProps) {
 
     setIsUpdating(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === selectedTask.id ? { ...task, status: newStatus } : task
-        )
+      // Make actual API call to update task status
+      // const response = await axiosInstance.patch(
+      //   `/tasks/${selectedTask.id}/status`,
+      //   {
+      //     status: newStatus,
+      //   }
+      // );
+      const response = await axiosInstance.patch(
+        `/tasks/status/${selectedTask.id}`,
+        {
+          status: newStatus,
+        }
       );
 
-      setSelectedTask((prev) => (prev ? { ...prev, status: newStatus } : null));
-      setSelectedStatus(newStatus);
+      if (response.data.success) {
+        // Update local state
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            task.id === selectedTask.id ? { ...task, status: newStatus } : task
+          )
+        );
 
-      setSuccessMessage(
-        `Task status updated to ${getStatusDisplay(newStatus).label}`
-      );
-      setShowSuccess(true);
-      setShowTaskPopup(false);
+        setSelectedTask((prev) =>
+          prev ? { ...prev, status: newStatus } : null
+        );
+        setSelectedStatus(newStatus);
 
-      setTimeout(() => {
-        setShowSuccess(false);
-      }, 2000);
-    } catch (error) {
+        setSuccessMessage(
+          `Task status updated to ${getStatusDisplay(newStatus).label}`
+        );
+        setShowSuccess(true);
+        setShowTaskPopup(false);
+
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 3000);
+      } else {
+        throw new Error(
+          response.data.message || "Failed to update task status"
+        );
+      }
+    } catch (error: any) {
       console.error("Error updating task status:", error);
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Failed to update task status. Please try again."
+      );
+      setShowError(true);
+      setTimeout(() => {
+        setShowError(false);
+      }, 3000);
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleCreateTask = async () => {
-    // Fix: Add projectId to validation (backend requires it)
-    if (
-      !createTaskData.title ||
-      !createTaskData.teamId ||
-      !createTaskData.assignedToId
-      // Added this required field
-    ) {
-      // Consider showing an error message for missing fields
-      setErrorMessage("Please fill in all required fields");
-      setShowError(true);
-      setTimeout(() => {
-        setShowError(false);
-      }, 2000);
-      return;
-    }
+  // Fixed handleCreateTask function to work with CreateTaskPopup
+  const handleCreateTask = async (taskData: CreateTaskData) => {
+    console.log("📝 Creating task with data:", taskData);
 
     // Use the improved JWT cookie helper
-    const token = getValidJWTToken("token");
-
-    // Check if token exists and is valid
-    if (!token) {
-      setErrorMessage("Authentication required. Please login again.");
-      setShowError(true);
-      setTimeout(() => {
-        setShowError(false);
-      }, 2000);
-      return;
-    }
 
     try {
-      const response = await axiosInstance.post("/tasks/create");
+      // Send only the fields that backend expects
+      const response = await axiosInstance.post("/tasks/create", {
+        title: taskData.title,
+        description: taskData.description,
+        dueDate: taskData.dueDate,
+        teamId: taskData.teamId,
+        assignedToId: taskData.assignedToId,
+      });
+
+      console.log("✅ Task creation response:", response.data);
 
       if (response.data.success) {
         setSuccessMessage(
-          `Task "${createTaskData.title}" created and assigned successfully!`
+          `Task "${taskData.title}" created and assigned successfully!`
         );
         setShowSuccess(true);
         setShowCreateTaskPopup(false);
-        setTimeout(() => {
-          setShowSuccess(false); // Fix: Changed from true to false
-        }, 2000);
-      }
-      // Fix: Use else if to avoid both blocks executing
-      else if (!response.data.success) {
-        setShowCreateTaskPopup(false);
-        setErrorMessage(`Task "${createTaskData.title}" Failed To Create`);
-        setShowError(true);
+
+        // Refresh tasks list
+        await refreshTasks();
 
         setTimeout(() => {
-          setShowError(false);
-        }, 2000);
+          setShowSuccess(false);
+        }, 3000);
+      } else {
+        throw new Error(response.data.message || "Failed to create task");
       }
-
-      // Reset form data
-      setCreateTaskData({
-        title: "",
-        description: "",
-        dueDate: "",
-        teamId: "",
-        assignedToId: "",
-        projectId: "",
-      });
-      setSelectedMemberId("");
-      setTeamMembers([]);
     } catch (error: any) {
-      console.error("Error creating task:", error);
-
-      // Fix: Add error handling for network/server errors
-      setShowCreateTaskPopup(false);
+      console.error("💥 Error creating task:", error);
 
       // Enhanced error handling based on error type
+      let errorMsg = "Failed to create task. Please try again.";
+
       if (error.response?.status === 401) {
-        setErrorMessage("Authentication expired. Please login again.");
+        errorMsg = "Authentication expired. Please login again.";
       } else if (error.response?.status === 403) {
-        setErrorMessage("You don't have permission to create tasks.");
+        errorMsg = "You don't have permission to create tasks in this team.";
       } else if (error.response?.status === 400) {
-        setErrorMessage("Invalid task data. Please check all fields.");
+        errorMsg =
+          error.response.data.message ||
+          "Invalid task data. Please check all fields.";
       } else if (error.response?.data?.message) {
-        setErrorMessage(error.response.data.message);
-      } else {
-        setErrorMessage("Failed to create task. Please try again.");
+        errorMsg = error.response.data.message;
       }
 
+      setErrorMessage(errorMsg);
       setShowError(true);
       setTimeout(() => {
         setShowError(false);
-      }, 2000);
+      }, 3000);
+
+      // Re-throw the error so CreateTaskPopup knows the creation failed
+      throw error;
     }
   };
 
-  const handleTeamSelection = (teamId: string) => {
-    const selectedTeam = adminTeams.find((team) => team.id === teamId);
-    if (selectedTeam) {
-      setCreateTaskData((prev) => ({
-        ...prev,
-        teamId,
-      }));
-      loadTeamMembers(teamId);
+  const refreshTasks = async () => {
+    try {
+      const response = await axiosInstance.get("/tasks/MyTasks");
+      if (response.data.success) {
+        setTasks(response.data.tasks);
+        console.log("🔄 Tasks refreshed successfully");
+      }
+    } catch (error) {
+      console.error("Error refreshing tasks:", error);
     }
   };
 
@@ -457,16 +455,6 @@ export function MyTasksClient({ initialTasks }: MyTasksClientProps) {
     } catch (error) {
       console.error("Error formatting date:", error);
       return "Invalid date";
-    }
-  };
-
-  const formatDateForInput = (dateString: string) => {
-    if (!dateString) return "";
-    try {
-      const date = new Date(dateString);
-      return date.toISOString().split("T")[0];
-    } catch (error) {
-      return "";
     }
   };
 
@@ -570,7 +558,7 @@ export function MyTasksClient({ initialTasks }: MyTasksClientProps) {
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className="border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
+            className="bg-white/10 text-white border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
           >
             <Filter className="w-4 h-4 mr-2" />
             Filters

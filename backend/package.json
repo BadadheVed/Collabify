@@ -8,6 +8,7 @@
     "tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
+    "@liveblocks/node": "^3.1.2",
     "@prisma/client": "^6.9.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
@@ -23,6 +24,6 @@
     "zod": "^3.25.49"
   },
   "scripts": {
-    "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts"
+    "start": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts"
   }
 }

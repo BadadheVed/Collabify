@@ -13,9 +13,12 @@ import {
   Crown,
   Star,
   Shield,
+  Trash2,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { axiosInstance } from "@/axiosSetup/axios";
 
 interface Project {
   id: string;
@@ -54,11 +57,51 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
   const [projectTeams, setProjectTeams] = useState<Team[]>([]);
   const [isTeamsLoading, setIsTeamsLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [deletedProjectName, setDeletedProjectName] = useState("");
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Disable/enable body scroll when any popup is active
+  useEffect(() => {
+    const shouldDisableScroll = showPopup || showDeleteConfirm;
+
+    if (shouldDisableScroll) {
+      // Store original overflow value
+      const originalOverflow = document.body.style.overflow;
+
+      // Disable scrolling
+      document.body.style.overflow = "hidden";
+
+      // Also disable scrolling on html element for better cross-browser support
+      document.documentElement.style.overflow = "hidden";
+
+      // Cleanup function
+      return () => {
+        document.body.style.overflow = originalOverflow || "unset";
+        document.documentElement.style.overflow = "unset";
+      };
+    } else {
+      // Re-enable scrolling
+      document.body.style.overflow = "unset";
+      document.documentElement.style.overflow = "unset";
+    }
+  }, [showPopup, showDeleteConfirm]);
+
+  // Auto-hide success message after 3 seconds
+  useEffect(() => {
+    if (showSuccessMessage) {
+      const timer = setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessMessage]);
 
   const furl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -124,22 +167,16 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
       ];
 
       await new Promise((resolve) => setTimeout(resolve, 800));
-      setProjectTeams(mockTeams);
+      //setProjectTeams(mockTeams);
 
       // Uncomment for real API:
-      /*
-      const response = await fetch(`${furl}/projects/${projectId}/teams`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      const data: ProjectTeamsResponse = await response.json();
-      if (data.success) {
-        setProjectTeams(data.teams);
+      console.log("Fetching the teams");
+      const response = await axiosInstance.get(`projects/${projectId}/teams`);
+      console.log("Fetching the teams done");
+      const teams = response.data.teams;
+      if (response.data.success) {
+        setProjectTeams(teams);
       }
-      */
     } catch (error) {
       console.error("Error fetching project teams:", error);
       setProjectTeams([]);
@@ -162,6 +199,46 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
     setShowPopup(false);
     setSelectedProject(null);
     setProjectTeams([]);
+    setShowDeleteConfirm(false);
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedProject) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await axiosInstance.delete(
+        `/projects/${selectedProject.id}/delete`
+      );
+      const data = res.data;
+
+      // Store project name for success message
+      setDeletedProjectName(selectedProject.name);
+
+      // Close all popups after successful deletion
+      closePopup();
+
+      // Show success message
+      setShowSuccessMessage(true);
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 2000);
+
+      // Optionally refresh the page or update the projects list
+      router.refresh();
+    } catch (error) {
+      console.error("Error deleting project:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
   };
 
   const formatDateReliable = (dateString: string) => {
@@ -215,6 +292,38 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
 
   return (
     <>
+      {/* Success Message Toast */}
+      {showSuccessMessage && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 duration-300">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-600/20 rounded-xl blur opacity-50" />
+            <Card className="relative backdrop-blur-xl bg-gray-900/95 border border-green-500/30 rounded-xl overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent pointer-events-none" />
+              <div className="relative z-10 p-4 pr-12">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">
+                      {deletedProjectName} project is deleted
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSuccessMessage(false)}
+                  className="absolute top-2 right-2 text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 ease-out h-6 w-6 p-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {initialProjects.map((project, index) => {
           const roleDisplay = getRoleDisplay(project.role);
@@ -282,7 +391,10 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
 
       {/* Fixed Project Details Popup - Centered and Custom Scrollbar */}
       {showPopup && selectedProject && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6"
+          style={{ zIndex: 9998 }}
+        >
           <div className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-600/20 rounded-3xl blur opacity-50" />
             <Card className="relative backdrop-blur-xl bg-gray-900/90 border border-white/20 rounded-3xl overflow-hidden">
@@ -293,14 +405,24 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
                 <h2 className="text-2xl font-bold text-white bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
                   Project Details
                 </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={closePopup}
-                  className="text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105 rounded-xl"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDeleteClick}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 ease-out hover:scale-105 rounded-xl"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={closePopup}
+                    className="text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105 rounded-xl"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
 
               {/* Content with Custom Scrollbar */}
@@ -440,7 +562,69 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
         </div>
       )}
 
-      {/* Custom Scrollbar Styles */}
+      {/* Delete Confirmation Popup */}
+      {showDeleteConfirm && selectedProject && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6"
+          style={{ zIndex: 9999 }}
+        >
+          <div className="relative w-full max-w-md">
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-orange-600/20 rounded-2xl blur opacity-50" />
+            <Card className="relative backdrop-blur-xl bg-gray-900/95 border border-red-500/30 rounded-2xl overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent pointer-events-none" />
+
+              <div className="relative z-10 p-6 space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <Trash2 className="w-6 h-6 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Delete Project
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      This action cannot be undone
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-gray-300">
+                    Are you sure you want to delete the project{" "}
+                    <span className="font-semibold text-white">
+                      "{selectedProject.name}"
+                    </span>
+                    ?
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    This will permanently delete the project and all associated
+                    data.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="ghost"
+                    onClick={handleDeleteCancel}
+                    className="flex-1 text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 ease-out"
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleDeleteConfirm}
+                    disabled={isDeleting}
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white transition-all duration-200 ease-out disabled:opacity-50"
+                  >
+                    {isDeleting ? "Deleting..." : "Delete Project"}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         .scrollbar-thin {
           scrollbar-width: thin;
@@ -458,6 +642,32 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
         }
         ::-webkit-scrollbar {
           width: 8px;
+        }
+        @keyframes in {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-in {
+          animation: in 0.3s ease-out;
+        }
+        .slide-in-from-top-2 {
+          animation: slideInFromTop 0.3s ease-out;
+        }
+        @keyframes slideInFromTop {
+          from {
+            transform: translateY(-8px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
       `}</style>
     </>

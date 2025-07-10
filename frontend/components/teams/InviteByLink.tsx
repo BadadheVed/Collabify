@@ -236,7 +236,7 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
       <Button
         onClick={() => setShowInvitePopup(true)}
         variant="outline"
-        className="border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
+        className="bg-white/10 border-white/10 text-gray-400 text-white hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
       >
         <Link className="w-4 h-4 mr-2" />
         Invite by Link

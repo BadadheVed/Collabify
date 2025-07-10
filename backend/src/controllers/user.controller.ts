@@ -84,3 +84,66 @@ export const markAllNotificationsAsRead: RequestHandler = async (
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+export const UsersLive: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const userIds = req.query.userIds;
+    const ids = Array.isArray(userIds) ? userIds : [userIds];
+    const users = await db.user.findMany({
+      where: { id: { in: ids as string[] } },
+    });
+    const resolved = users.map((u) => ({
+      id: u.id,
+      info: {
+        name: u.name,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          u.name
+        )}&background=random&color=fff&rounded=true`,
+      },
+    }));
+    res.json(resolved);
+  } catch (error) {
+    console.error("Error resolving users:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+export const userSearch: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const text = req.query.text as string;
+    if (!text) {
+      res.status(400).send("Missing search text");
+      return;
+    }
+    const users = await db.user.findMany({
+      where: {
+        name: {
+          contains: text,
+          mode: "insensitive",
+        },
+      },
+      take: 5, // optional limit
+    });
+
+    const suggestions = users.map((u) => ({
+      id: u.id,
+      info: {
+        name: u.name,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          u.name
+        )}&background=random&color=fff&rounded=true`,
+      },
+    }));
+
+    res.json(suggestions);
+  } catch (error) {
+    console.error("Error in user search:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};

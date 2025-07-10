@@ -1,172 +1,73 @@
 import { db } from "@/DB_Client/db";
 import { Request, Response, RequestHandler } from "express";
 
-// export const DashBoard = async (req: Request, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     if (!userId) {
-//       res.status(401).json({ success: false, message: "Unauthorized" });
-//       return;
-//     }
-//     const now = new Date();
-//     const thisWeek = new Date();
-//     thisWeek.setDate(now.getDate() - now.getDay());
-//     const todayStart = new Date();
-//     todayStart.setHours(0, 0, 0, 0);
+export const getTileData = async (req: Request, res: Response) => {
+  const userId = req.user?.id;
 
-//     const thisMonth = new Date();
-//     thisMonth.setDate(1);
-//     const userProjects = await db.project.findMany({
-//       where: {
-//         team: {
-//           members: {
-//             some: { userId },
-//           },
-//         },
-//       },
-//       select: { id: true },
-//     });
-//     const projectIds = userProjects.map((p) => p.id);
-//     const [
-//       totalProjects,
-//       newProjectsThisWeek,
-//       totalMembers,
-//       newMembersThisMonth,
-//       totalDocuments,
-//       newDocumentsToday,
-//       totalTeams,
-//       recentProjects,
-//       allActivities,
-//     ] = await Promise.all([
-//       // Total projects user is involved in
-//       db.project.count({
-//         where: { team: { members: { some: { userId } } } },
-//       }),
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
 
-//       // Projects created this week
-//       db.project.count({
-//         where: { createdAt: { gte: thisWeek } },
-//       }),
+  try {
+    const userData = await db.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        email: true,
+        _count: {
+          select: {
+            ProjectMember: true,
+            teams: true,
+            documents: true,
+          },
+        },
+        teams: {
+          select: {
+            teamId: true,
+            team: {
+              select: {
+                _count: {
+                  select: { members: true, documents: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
-//       // Total team members in teams the user is part of
-//       db.teamMember.count({
-//         where: { team: { members: { some: { userId } } } },
-//       }),
+    if (!userData) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
 
-//       // New team members this month
-//       db.teamMember.count({
-//         where: { joinedAt: { gte: thisMonth } },
-//       }),
+    // Flatten the counts
+    const totalTeamMembers = userData.teams.reduce(
+      (acc, tm) => acc + tm.team._count.members,
+      0
+    );
 
-//       // Total documents owned by user
-//       db.document.count({
-//         where: { ownerId: userId },
-//       }),
+    const totalTeamDocuments = userData.teams.reduce(
+      (acc, tm) => acc + tm.team._count.documents,
+      0
+    );
 
-//       // New documents created today by user
-//       db.document.count({
-//         where: {
-//           createdAt: { gte: todayStart },
-//           ownerId: userId,
-//         },
-//       }),
-
-//       // Total teams user is in
-//       db.team.count({
-//         where: { members: { some: { userId } } },
-//       }),
-
-//       // Recent 3 projects user is involved in
-//       db.project.findMany({
-//         where: { team: { members: { some: { userId } } } },
-//         take: 3,
-//         orderBy: { createdAt: "desc" },
-//         include: {
-//           team: {
-//             include: {
-//               members: true,
-//             },
-//           },
-//         },
-//       }),
-
-//       // Recent 5 activity logs in projects where user is a team member
-//       await db.activityLog.findMany({
-//         where: {
-//           projectId: {
-//             in: projectIds,
-//           },
-//         },
-//         orderBy: {
-//           createdAt: "desc",
-//         },
-//         include: {
-//           actor: true,
-//           project: true,
-//         },
-//       }),
-//     ]);
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//     });
-//     return;
-//   }
-// };
-
-// export const Projects = async (req: Request, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     if (!userId) {
-//       res.status(401).json({
-//         success: false,
-//         message: "Unauthorized",
-//       });
-//       return;
-//     }
-//     const projects = await db.project.findMany({
-//       where: {
-//         team: {
-//           members: {
-//             some: {
-//               userId,
-//             },
-//           },
-//         },
-//       },
-//       orderBy: {
-//         createdAt: "desc",
-//       },
-//       include: {
-//         team: {
-//           select: {
-//             name: true,
-//             members: {
-//               select: { id: true }, // just to count
-//             },
-//           },
-//         },
-//       },
-//     });
-//     const formattedProjects = projects.map((project) => ({
-//       id: project.id,
-//       name: project.name,
-//       description: project.description,
-
-//       // "active", "urgent", etc.
-//       //dueDate: formatDate(project.dueDate),
-//       teamName: project.team.name,
-//       membersCount: project.team.members.length,
-//     }));
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//     });
-//     return;
-//   }
-// };
+    res.status(200).json({
+      name: userData.name,
+      email: userData.email,
+      projects: userData._count.ProjectMember,
+      teams: userData._count.teams,
+      teamMembers: totalTeamMembers,
+      documents: totalTeamDocuments,
+    });
+    return;
+  } catch (error) {
+    console.error("getTileData error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+    return;
+  }
+};
 
 export const getMyTeams = async (req: Request, res: Response) => {
   const userId = req.user?.id;

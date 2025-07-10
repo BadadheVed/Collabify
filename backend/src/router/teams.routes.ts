@@ -18,13 +18,19 @@ import {
 const teamRouter = Router();
 
 // Create a new team
+// teamRouter.post(
+//   "/:projectId/create",
+//   checkAuth,
+
+//   CreateTeam
+// );
+
 teamRouter.post(
   "/create",
-  CheckProjectRoles(["ADMIN", "MANAGER"]),
   checkAuth,
+
   CreateTeam
 );
-
 // Generate invite link
 teamRouter.post("/invite", checkAuth, InviteByLink);
 

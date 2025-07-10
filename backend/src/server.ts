@@ -8,6 +8,7 @@ import documentRouter from "./router/document.routes";
 import taskRouter from "./router/tasks.routes";
 import notificationRouter from "./router/notification.routes";
 import projectRouter from "./router/project.routes";
+import liveblocksRouter from "./router/liveblocks.route";
 import cors from "cors";
 import dotenv from "dotenv";
 app.use(express.json());
@@ -33,6 +34,7 @@ app.use("/documents", documentRouter);
 app.use("/tasks", taskRouter);
 app.use("/notifications", notificationRouter);
 app.use("/projects", projectRouter);
+app.use("/liveblocks", liveblocksRouter);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Listening On The Port ${PORT}`);

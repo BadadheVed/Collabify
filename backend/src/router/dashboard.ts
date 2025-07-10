@@ -1,9 +1,10 @@
 //import { DashBoard } from "@/controllers/dashboard.controller";
 import { Router } from "express";
 
-import { CreateTeam, InviteByLink } from "@/controllers/teams.controller";
+import { getTileData } from "@/controllers/dashboard.controller";
+import { checkAuth } from "@/middlewares/roles";
+
 const dashboard = Router();
 //ashboard.get("/", CheckRoles(["Admin"]), DashBoard);
-dashboard.post("/team/create", CreateTeam);
-dashboard.post("/team/invite", InviteByLink);
+dashboard.get("/tiledata", checkAuth, getTileData);
 export default dashboard;

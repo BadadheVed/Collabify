@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   X,
   Plus,
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { axiosInstance } from "@/axiosSetup/axios";
 
 interface CreateProjectData {
   name: string;
@@ -26,6 +28,7 @@ interface CreateProjectClientProps {
 export function CreateProjectClient({
   onProjectCreated,
 }: CreateProjectClientProps) {
+  const router = useRouter();
   const [showCreateProjectPopup, setShowCreateProjectPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -39,6 +42,41 @@ export function CreateProjectClient({
 
   const furl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
+  // Effect to handle body scroll when popup is active
+  useEffect(() => {
+    if (showCreateProjectPopup || showSuccess) {
+      // Store the current scroll position
+      const scrollY = window.scrollY;
+
+      // Disable body scroll
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+
+      return () => {
+        // Re-enable body scroll and restore position
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        document.body.style.overflow = "";
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showCreateProjectPopup, showSuccess]);
+
+  useEffect(() => {
+    if (!showSuccess && successMessage) {
+      // Clear success message
+      setSuccessMessage("");
+
+      // Refresh the main page
+      if (onProjectCreated) {
+        onProjectCreated();
+      }
+    }
+  }, [showSuccess, successMessage, onProjectCreated]);
+
   const handleCreateProject = async () => {
     if (!createProjectData.name.trim()) {
       return;
@@ -46,49 +84,50 @@ export function CreateProjectClient({
 
     setIsCreating(true);
     try {
-      // Mock project creation
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      console.log("creating a project");
+      const res = await axiosInstance.post("/projects/", createProjectData);
+      console.log("project created");
 
-      setSuccessMessage(
-        `Project "${createProjectData.name}" created successfully! You can now add teams and start collaborating.`
-      );
-      setShowSuccess(true);
-      setShowCreateProjectPopup(false);
-      setCreateProjectData({ name: "", description: "" });
-
-      // Auto-hide success message after 3 seconds
-      setTimeout(() => {
-        setShowSuccess(false);
-        if (onProjectCreated) {
-          onProjectCreated();
-        }
-      }, 3000);
-
-      // Uncomment for real API:
-      /*
-      const response = await fetch(`${furl}/projects/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(createProjectData),
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        setSuccessMessage(`Project "${createProjectData.name}" created successfully!`);
+      if (res.data.success) {
+        setSuccessMessage(
+          `Project "${createProjectData.name}" created successfully!`
+        );
         setShowSuccess(true);
-        if (onProjectCreated) {
-          onProjectCreated();
-        }
+
+        // CLOSE THE CREATION POPUP AND RESET FORM
+        setShowCreateProjectPopup(false);
+        setCreateProjectData({ name: "", description: "" });
+
+        // METHOD 1: Force refresh server components
+        console.log("Router refresh entered");
+        router.refresh();
+        console.log("Router refresh done");
+
+        // METHOD 2: Complete page reload (more reliable but less smooth)
+        // window.location.reload();
+
+        // METHOD 3: Navigate to the same page to trigger re-render
+        // router.push(window.location.pathname);
+
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setShowSuccess(false);
+          // Additional refresh if needed
+          if (onProjectCreated) {
+            onProjectCreated();
+          }
+        }, 2000);
       }
-      */
     } catch (error) {
       console.error("Error creating project:", error);
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const closePopup = () => {
+    setShowCreateProjectPopup(false);
+    setCreateProjectData({ name: "", description: "" }); // Reset form
   };
 
   return (
@@ -118,7 +157,7 @@ export function CreateProjectClient({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowCreateProjectPopup(false)}
+                  onClick={closePopup}
                   className="text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105 rounded-xl"
                 >
                   <X className="w-5 h-5" />
@@ -196,12 +235,11 @@ export function CreateProjectClient({
                     </div>
                   </Card>
 
-                  {/* Action Buttons */}
                   <div className="flex gap-3 pt-4">
                     <Button
                       variant="outline"
                       onClick={() => setShowCreateProjectPopup(false)}
-                      className="flex-1 border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out"
+                      className="bg-white/10 flex-1 border-white/10 text-white hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out"
                       disabled={isCreating}
                     >
                       Cancel
@@ -241,7 +279,7 @@ export function CreateProjectClient({
               <div
                 className="h-full bg-gradient-to-r from-green-400 to-green-600"
                 style={{
-                  animation: "progressBar 3s linear forwards",
+                  animation: "progressBar 2s linear forwards",
                 }}
               ></div>
             </div>

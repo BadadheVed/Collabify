@@ -10,8 +10,11 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  DoorOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserInfo } from "@/hooks/userInfo";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -53,6 +56,15 @@ const sidebarItems = [
 
 export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const data = useUserInfo();
+  const [showLogoutDropdown, setShowLogoutDropdown] = useState(false);
+
+  const handleLogout = () => {
+    // Add your logout logic here
+    console.log("Logging out...");
+    // Example: redirect to login page or call logout API
+    // window.location.href = '/login';
+  };
 
   return (
     <div
@@ -128,28 +140,60 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
         })}
       </nav>
 
-      {/* User Profile - Only show circle when collapsed */}
-      <div className="absolute bottom-4 left-4 right-4">
+      {/* User Profile & Logout Section */}
+      <div className="absolute bottom-4 left-4 right-4 space-y-2">
+        {/* Logout Button - Always visible */}
+
+        {/* User Profile */}
         {isCollapsed ? (
           <div className="flex justify-center">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-purple-500/30 hover:scale-105 transition-all duration-200 ease-out cursor-pointer backdrop-blur-sm">
-              VB
+              {data?.name?.charAt(0) || "X"}
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-gray-700/50 hover:border-cyan-500/50 transition-all duration-200 ease-out hover:shadow-lg hover:shadow-cyan-500/20 backdrop-blur-md cursor-pointer group hover:scale-[1.02]">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-purple-500/30">
-              VB
-            </div>
-            <div className="transition-all duration-200 ease-out">
-              <div className="text-white text-sm font-medium group-hover:text-cyan-400 transition-colors duration-200 ease-out">
-                Ved Badadhe
+          <div className="relative">
+            {/* Logout Dropdown */}
+            {showLogoutDropdown && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800/95 backdrop-blur-md border border-gray-700/50 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-300 hover:text-white hover:bg-red-500/20 transition-all duration-200 ease-out group"
+                >
+                  <LogOut className="w-4 h-4 text-red-400 group-hover:text-red-300" />
+                  <span className="text-sm font-medium">Logout</span>
+                </button>
               </div>
-              <div className="text-gray-400 text-xs">ved@example.com</div>
+            )}
+
+            {/* User Profile Card */}
+            <div
+              className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-gray-700/50 hover:border-cyan-500/50 transition-all duration-200 ease-out hover:shadow-lg hover:shadow-cyan-500/20 backdrop-blur-md cursor-pointer group hover:scale-[1.02]"
+              onClick={() => setShowLogoutDropdown(!showLogoutDropdown)}
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-purple-500/30">
+                {data?.name?.charAt(0) || "X"}
+              </div>
+              <div className="transition-all duration-200 ease-out">
+                <div className="text-white text-sm font-medium group-hover:text-cyan-400 transition-colors duration-200 ease-out">
+                  {data?.name || "XXXX"}
+                </div>
+                <div className="text-gray-400 text-xs">
+                  {data?.email || "XXXX@XXXX.com"}
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Click outside to close dropdown */}
+      {showLogoutDropdown && (
+        <div
+          className="fixed inset-0 z-[-1]"
+          onClick={() => setShowLogoutDropdown(false)}
+        />
+      )}
     </div>
   );
 }

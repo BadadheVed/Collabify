@@ -3,6 +3,7 @@ import {
   CreateProject,
   getAllMyProjects,
   deleteProject,
+  getAdminProjects,
 } from "@/controllers/teams.controller";
 import { getProjectTeams } from "@/controllers/tasks2.controller";
 import { checkAuth } from "@/middlewares/roles";
@@ -13,8 +14,8 @@ const projectRouter = Router();
 projectRouter.post("/", checkAuth, CreateProject);
 
 // Delete a specific project
-projectRouter.delete("/:projectId", checkAuth, deleteProject);
+projectRouter.delete("/:projectId/delete", checkAuth, deleteProject);
 projectRouter.get("/UserProjects", checkAuth, getAllMyProjects);
 projectRouter.get("/:projectId/teams", checkAuth, getProjectTeams);
-
+projectRouter.get("/GetAdminProjects", checkAuth, getAdminProjects);
 export default projectRouter;

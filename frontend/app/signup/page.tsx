@@ -2,28 +2,95 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import axios from "axios";
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
+    setIsLoading(true);
+
+    // Client-side validation
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      setError("Passwords do not match!");
+      setIsLoading(false);
       return;
     }
-    console.log("Signup attempt:", formData);
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long!");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { confirmPassword, ...submitData } = formData;
+
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/signup`,
+        submitData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true, // This ensures cookies are sent/received
+        }
+      );
+
+      if (res.data.success) {
+        setSuccess("Account created successfully! Redirecting to login...");
+        console.log("SignUp response:", res.data);
+
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
+
+        // Redirect to login page after 2 seconds
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      }
+    } catch (error: any) {
+      console.error("Signup error:", error);
+
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else if (error.response?.data?.errors) {
+        // Handle Zod validation errors
+        const validationErrors = error.response.data.errors
+          .map((err: any) => err.message)
+          .join(", ");
+        setError(validationErrors);
+      } else {
+        setError("An error occurred during signup. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,30 +98,9 @@ export default function SignupPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear errors when user starts typing
+    if (error) setError("");
   };
-
-  // const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-  //   const card = e.currentTarget;
-  //   const rect = card.getBoundingClientRect();
-  //   const x = e.clientX - rect.left;
-  //   const y = e.clientY - rect.top;
-  //   const centerX = rect.width / 2;
-  //   const centerY = rect.height / 2;
-  //   const rotateX = (y - centerY) / 20; // Reduced sensitivity
-  //   const rotateY = (centerX - x) / 20; // Reduced sensitivity
-
-  //   // Apply transform with smooth transition
-  //   card.style.transition = "transform 0.1s ease-out";
-  //   card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`;
-  // };
-
-  // const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-  //   const card = e.currentTarget;
-  //   // Smooth transition back to original position
-  //   card.style.transition = "transform 0.3s ease-out";
-  //   card.style.transform =
-  //     "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
-  // };
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
@@ -74,13 +120,10 @@ export default function SignupPage() {
           Back to Home
         </Link>
 
-        {/* Signup Card */}
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
           <div
             className="relative bg-gray-800 rounded-2xl p-8 border border-gray-700 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/20"
-            // onMouseMove={handleMouseMove}
-            // onMouseLeave={handleMouseLeave}
             style={{
               transformStyle: "preserve-3d",
               transition: "border-color 0.3s ease, box-shadow 0.3s ease",
@@ -99,6 +142,20 @@ export default function SignupPage() {
               </p>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-lg">
+                <p className="text-red-300 text-sm">{error}</p>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <div className="mb-4 p-3 bg-green-900/50 border border-green-500 rounded-lg">
+                <p className="text-green-300 text-sm">{success}</p>
+              </div>
+            )}
+
             {/* Signup Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
@@ -109,12 +166,13 @@ export default function SignupPage() {
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-hover:text-cyan-400 transition-colors duration-300" />
                   <Input
                     id="fullName"
-                    name="fullName"
+                    name="name"
                     type="text"
                     required
-                    value={formData.fullName}
+                    disabled={isLoading}
+                    value={formData.name}
                     onChange={handleInputChange}
-                    className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 hover:border-gray-500 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
+                    className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 hover:border-gray-500 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 disabled:opacity-50"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -131,9 +189,10 @@ export default function SignupPage() {
                     name="email"
                     type="email"
                     required
+                    disabled={isLoading}
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 hover:border-gray-500 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
+                    className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 hover:border-gray-500 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 disabled:opacity-50"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -150,15 +209,18 @@ export default function SignupPage() {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     required
+                    disabled={isLoading}
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="pl-10 pr-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 hover:border-gray-500 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
+                    className="pl-10 pr-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 hover:border-gray-500 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 disabled:opacity-50"
                     placeholder="Create a password"
+                    minLength={6}
                   />
                   <button
                     type="button"
+                    disabled={isLoading}
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white hover:scale-110 transition-all duration-300"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50"
                   >
                     {showPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -180,15 +242,18 @@ export default function SignupPage() {
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     required
+                    disabled={isLoading}
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className="pl-10 pr-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 hover:border-gray-500 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
+                    className="pl-10 pr-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 hover:border-gray-500 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 disabled:opacity-50"
                     placeholder="Confirm your password"
+                    minLength={6}
                   />
                   <button
                     type="button"
+                    disabled={isLoading}
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white hover:scale-110 transition-all duration-300"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -199,35 +264,12 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div className="flex items-start">
-                <input
-                  type="checkbox"
-                  required
-                  className="mr-3 mt-1 rounded border-gray-600 bg-gray-700 hover:border-cyan-500 transition-colors duration-300"
-                />
-                <span className="text-sm text-gray-400 hover:text-gray-300 transition-colors duration-300">
-                  I agree to the{" "}
-                  <Link
-                    href="#"
-                    className="text-cyan-400 hover:text-cyan-300 hover:underline transition-all duration-300"
-                  >
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link
-                    href="#"
-                    className="text-cyan-400 hover:text-cyan-300 hover:underline transition-all duration-300"
-                  >
-                    Privacy Policy
-                  </Link>
-                </span>
-              </div>
-
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white py-3 rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                Create Account
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 
@@ -243,7 +285,8 @@ export default function SignupPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 border-transparent text-white hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 border-transparent text-white hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path
@@ -269,7 +312,8 @@ export default function SignupPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 border-transparent text-white hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 border-transparent text-white hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <svg
                   className="w-5 h-5 mr-2"

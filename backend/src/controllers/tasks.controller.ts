@@ -447,7 +447,7 @@ export const ChangeStatus: RequestHandler = async (req, res) => {
         userId,
         teamId: assignedUserTeam.teamId,
         role: {
-          in: ["ADMIN", "MANAGER"],
+          in: ["ADMIN", "MANAGER", "MEMBER"],
         },
       },
     });

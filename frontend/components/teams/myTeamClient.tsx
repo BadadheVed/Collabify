@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { axiosInstance } from "@/axiosSetup/axios";
 
 interface UserTeam {
   teamId: string;
@@ -108,51 +109,40 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
   const fetchTeamMembers = async (teamId: string) => {
     setIsMembersLoading(true);
     try {
-      // Mock team members data
-      const mockMembers: TeamMember[] = [
-        {
-          id: "user-1",
-          name: "Alice Johnson",
-          email: "alice@company.com",
-          role: "LEAD",
-        },
-        {
-          id: "user-2",
-          name: "Bob Smith",
-          email: "bob@company.com",
-          role: "MEMBER",
-        },
-        {
-          id: "user-3",
-          name: "Carol Davis",
-          email: "carol@company.com",
-          role: "MEMBER",
-        },
-        {
-          id: "user-4",
-          name: "David Wilson",
-          email: "david@company.com",
-          role: "ADMIN",
-        },
-      ];
+      // const mockMembers: TeamMember[] = [
+      //   {
+      //     id: "user-1",
+      //     name: "Alice Johnson",
+      //     email: "alice@company.com",
+      //     role: "LEAD",
+      //   },
+      //   {
+      //     id: "user-2",
+      //     name: "Bob Smith",
+      //     email: "bob@company.com",
+      //     role: "MEMBER",
+      //   },
+      //   {
+      //     id: "user-3",
+      //     name: "Carol Davis",
+      //     email: "carol@company.com",
+      //     role: "MEMBER",
+      //   },
+      //   {
+      //     id: "user-4",
+      //     name: "David Wilson",
+      //     email: "david@company.com",
+      //     role: "ADMIN",
+      //   },
+      // ];
 
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setTeamMembers(mockMembers);
-
-      // Uncomment for real API:
-      /*
-      const response = await fetch(`${furl}/teams/${teamId}/members`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      const data: TeamMembersResponse = await response.json();
+      console.log("Fetching the team members");
+      const response = await axiosInstance.get(`/teams/${teamId}/members`);
+      console.log("team members fetched successfully");
+      const data = response.data;
       if (data.success) {
         setTeamMembers(data.members);
       }
-      */
     } catch (error) {
       console.error("Error fetching team members:", error);
       setTeamMembers([]);
@@ -185,25 +175,6 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
       setTimeout(() => {
         setShowSuccess(false);
       }, 2000);
-
-      // Uncomment for real API:
-      /*
-      const response = await fetch(`${furl}/teams/create`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(createTeamData),
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        setSuccessMessage(`Team "${createTeamData.name}" created successfully!`);
-        setShowSuccess(true);
-        // Refresh teams list
-      }
-      */
     } catch (error) {
       console.error("Error creating team:", error);
     }
@@ -264,23 +235,6 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
 
   return (
     <>
-      {/* Header with Create Team Button */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-            My Teams
-          </h2>
-          <p className="text-gray-400 mt-1">Teams you're a member of</p>
-        </div>
-        <Button
-          onClick={() => setShowCreateTeamPopup(true)}
-          className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-200 ease-out backdrop-blur-sm border border-white/10"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Team
-        </Button>
-      </div>
-
       {/* Teams Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {initialTeams.map((team, index) => {

@@ -16,7 +16,6 @@ export const getUserTasks: RequestHandler = async (
       });
       return;
     }
-    
 
     const tasks = await db.task.findMany({
       where: {
