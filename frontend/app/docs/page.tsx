@@ -1,11 +1,14 @@
 import { Room } from "./Room";
 import { TextEditor } from "./components/TextEditor";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 export default function Home() {
   return (
     <main>
-      <Room>
-        <TextEditor />
-      </Room>
+      <DashboardLayout>
+        <Room>
+          <TextEditor />
+        </Room>
+      </DashboardLayout>
     </main>
   );
 }

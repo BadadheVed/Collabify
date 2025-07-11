@@ -3,6 +3,7 @@ import { db } from "@/DB_Client/db";
 import { Request, Response } from "express";
 import { nanoid } from "nanoid";
 import { RequestHandler } from "express";
+import { handleProjectCreated, handleUserJoinTeam } from "@/services/notifications.service";
 export const CreateTeam: RequestHandler = async (
   req: Request,
   res: Response
@@ -93,24 +94,49 @@ export const ValidateInvite: RequestHandler = async (
   try {
     const invite = await db.invite.findUnique({
       where: { token },
-      include: { team: true },
+      include: {
+        team: {
+          include: {
+            project: true,
+          },
+        },
+        invitedBy: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
 
-    if (!invite || invite.used || new Date(invite.expiresAt) < new Date()) {
-      res.status(400).json({ message: "Invalid or expired invite" });
+    if (!invite) {
+      res.status(404).json({ success: false, message: "Invite not found" });
       return;
     }
 
+    const isExpired = new Date(invite.expiresAt) < new Date();
+    const isValid = !invite.used && !isExpired;
+
     res.status(200).json({
       success: true,
-      teamName: invite.team.name,
-      role: invite.role,
-      token: invite.token,
+      invite: {
+        id: invite.id,
+        teamId: invite.teamId,
+        teamName: invite.team.name,
+        projectName: invite.team.project.name,
+        inviterName: invite.invitedBy.name,
+        inviterEmail: invite.invitedBy.email,
+        role: invite.role,
+        expiresAt: invite.expiresAt.toISOString(),
+        createdAt: invite.createdAt.toISOString(),
+        isValid,
+        isExpired,
+      },
     });
     return;
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
     return;
   }
 };
@@ -120,7 +146,6 @@ export const AcceptInvite: RequestHandler = async (
   res: Response
 ) => {
   const { token } = req.params;
-  const { isAccepting } = req.body;
   const userId = req.user?.id;
 
   if (!userId) {
@@ -137,25 +162,20 @@ export const AcceptInvite: RequestHandler = async (
       include: {
         team: {
           include: {
-            project: true, // 🟢 Needed to get projectId
+            project: true,
           },
         },
       },
     });
 
     if (!invite || invite.used || new Date(invite.expiresAt) < new Date()) {
-      res.status(410).json({ message: "Invite expired or used" });
-      return;
-    }
-
-    if (!isAccepting) {
       res
-        .status(200)
-        .json({ message: `Invite to ${invite.team.name} rejected` });
+        .status(410)
+        .json({ success: false, message: "Invite expired or used" });
       return;
     }
 
-    // 🟢 Add to TeamMember
+    // Add to TeamMember
     await db.teamMember.create({
       data: {
         userId,
@@ -163,16 +183,17 @@ export const AcceptInvite: RequestHandler = async (
         role: invite.role,
       },
     });
+    handleUserJoinTeam(userId, invite.teamId);
 
-    // 🟢 Add to ProjectMember if not already present
+    // Add to ProjectMember if not already present
     await db.projectMember.upsert({
       where: {
         userId_projectId: {
           userId,
-          projectId: invite.team.project.id, // 🟢 Get from team.project
+          projectId: invite.team.project.id,
         },
       },
-      update: {}, // No update needed if already present
+      update: {},
       create: {
         userId,
         projectId: invite.team.project.id,
@@ -180,7 +201,7 @@ export const AcceptInvite: RequestHandler = async (
       },
     });
 
-    // 🟢 Mark invite as used
+    // Mark invite as used
     await db.invite.update({
       where: { token },
       data: {
@@ -196,7 +217,48 @@ export const AcceptInvite: RequestHandler = async (
     return;
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
+    return;
+  }
+};
+
+export const RejectInvite: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
+  const { token } = req.params;
+
+  try {
+    const invite = await db.invite.findUnique({
+      where: { token },
+      include: {
+        team: true,
+      },
+    });
+
+    if (!invite || invite.used || new Date(invite.expiresAt) < new Date()) {
+      res
+        .status(410)
+        .json({ success: false, message: "Invite expired or used" });
+      return;
+    }
+
+    // Mark invite as used without adding user to team
+    await db.invite.update({
+      where: { token },
+      data: {
+        used: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Invite to ${invite.team.name} rejected`,
+    });
+    return;
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
     return;
   }
 };
@@ -222,6 +284,7 @@ export const CreateProject: RequestHandler = async (
         createdById: userId,
       },
     });
+    handleProjectCreated(userId, project.id, project.name);
 
     // ✅ Add the creator as ADMIN in projectMember table
     await db.projectMember.create({

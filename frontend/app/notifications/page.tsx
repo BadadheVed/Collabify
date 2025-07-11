@@ -1,9 +1,16 @@
-import { Suspense } from 'react';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { NotificationsPageClient } from './components/notifications-page-client';
-import { Card } from '@/components/ui/card';
-import { Bell, Settings, Filter, CheckCheck, Trash2, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Suspense } from "react";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { NotificationsPageClient } from "@/components/notifications/notificationclient";
+import { Card } from "@/components/ui/card";
+import {
+  Bell,
+  Settings,
+  Filter,
+  CheckCheck,
+  Trash2,
+  AlertCircle,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Loading skeleton for notifications page
 function NotificationsPageSkeleton() {
@@ -24,7 +31,10 @@ function NotificationsPageSkeleton() {
       {/* Stats Cards Skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="backdrop-blur-xl bg-white/5 border border-white/10 p-6 rounded-2xl">
+          <Card
+            key={i}
+            className="backdrop-blur-xl bg-white/5 border border-white/10 p-6 rounded-2xl"
+          >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white/10 rounded-xl animate-pulse" />
               <div className="flex-1">
@@ -67,7 +77,9 @@ export default function NotificationsPage() {
             <h1 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
               Notifications
             </h1>
-            <p className="text-gray-400">Stay updated with your team activities and important updates</p>
+            <p className="text-gray-400">
+              Stay updated with your team activities and important updates
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <Button

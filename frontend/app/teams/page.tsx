@@ -6,6 +6,7 @@ import { InviteLinkClient } from "@/components/teams/InviteByLink";
 import { CreateTeamClient } from "@/components/teams/CreateTeamClient";
 import { TeamsClientWrapper } from "@/components/teams/TeamClientWrapper";
 //import { useRouter } from "next/navigation";
+export const dynamic = "force-dynamic";
 export default function TeamsPage() {
   // const router = useRouter();
   // const handleTeamCreated = () => {

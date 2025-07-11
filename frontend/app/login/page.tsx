@@ -1,17 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
-import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
+export const dynamic = "force-dynamic";
+
+// Separate component that uses useSearchParams
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
+  const [returnUrl, setReturnUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -21,6 +26,13 @@ export default function LoginPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  useEffect(() => {
+    const returnUrlParam = searchParams.get("returnUrl");
+    if (returnUrlParam) {
+      setReturnUrl(decodeURIComponent(returnUrlParam));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,11 +60,15 @@ export default function LoginPage() {
         //  setSuccessMessage(res.data.message || "Login successful!");
         setShowSuccess(true);
 
-        // Navigate to dashboard after showing success message
+        // Navigate to return URL or dashboard after showing success message
         setTimeout(() => {
           setShowSuccess(false);
-          console.log("Navigating to dashboard...");
-          router.push("/dashboard");
+          console.log("Navigating to:", returnUrl || "/dashboard");
+          if (returnUrl) {
+            router.push(returnUrl);
+          } else {
+            router.push("/dashboard");
+          }
         }, 2000);
       } else {
         setErrorMsg(res.data.message || "Login failed");
@@ -87,13 +103,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
-      </div>
-
+    <>
       {/* Success Popup */}
       {showSuccess && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -151,6 +161,13 @@ export default function LoginPage() {
               <div className="text-3xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent hover:scale-105 transition-transform duration-300">
                 Collabify
               </div>
+              {returnUrl && (
+                <div className="mb-4 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+                  <p className="text-cyan-400 text-sm font-medium">
+                    Sign in to continue with your team invitation
+                  </p>
+                </div>
+              )}
               <h1 className="text-2xl font-bold text-white mb-2 hover:text-transparent hover:bg-gradient-to-r hover:from-cyan-400 hover:to-purple-500 hover:bg-clip-text transition-all duration-300">
                 Welcome Back
               </h1>
@@ -301,6 +318,56 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+    </>
+  );
+}
+
+// Loading component for Suspense fallback
+function LoginLoading() {
+  return (
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+      {/* Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+      </div>
+
+      <div className="relative w-full max-w-md">
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl blur opacity-20"></div>
+          <div className="relative bg-gray-800 rounded-2xl p-8 border border-gray-700">
+            <div className="text-center mb-8">
+              <div className="text-3xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+                Collabify
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">Loading...</h1>
+              <p className="text-gray-400">Please wait</p>
+            </div>
+            <div className="animate-pulse space-y-4">
+              <div className="h-12 bg-gray-700 rounded"></div>
+              <div className="h-12 bg-gray-700 rounded"></div>
+              <div className="h-12 bg-gray-700 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+      {/* Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+      </div>
+
+      <Suspense fallback={<LoginLoading />}>
+        <LoginForm />
+      </Suspense>
 
       {/* CSS Animation Styles */}
       <style jsx>{`

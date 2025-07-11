@@ -1,4 +1,5 @@
 import { db } from "@/DB_Client/db";
+import { TaskAssigned } from "@/services/notifications.service";
 import { Request, Response } from "express";
 import { RequestHandler } from "express";
 
@@ -72,6 +73,7 @@ export const createAndAssignTask: RequestHandler = async (req, res) => {
         assigneeId: userId, // creator of the task
       },
     });
+    TaskAssigned(userId, task.title);
 
     res.status(201).json({
       success: true,

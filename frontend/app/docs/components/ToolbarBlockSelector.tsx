@@ -8,6 +8,11 @@ type Props = {
 };
 
 export function ToolbarBlockSelector({ editor }: Props) {
+  // Guard against null editor to prevent hydration issues
+  if (!editor) {
+    return null;
+  }
+
   return (
     <Toolbar.BlockSelector
       className={styles.blockSelector}

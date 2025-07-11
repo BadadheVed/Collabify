@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   Link,
@@ -13,16 +13,19 @@ import {
   Mail,
   MessageCircle,
   Clock,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { axiosInstance } from "@/axiosSetup/axios";
 
 interface Team {
   id: string;
   name: string;
+  projectId: string;
   projectName: string;
-  memberCount: number;
 }
 
 interface InviteData {
@@ -45,8 +48,11 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
   const [showInvitePopup, setShowInvitePopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showGeneratedInvite, setShowGeneratedInvite] = useState(false);
+  const [showError, setShowError] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
   const [inviteData, setInviteData] = useState<InviteData>({
     teamId: "",
     role: "MEMBER",
@@ -54,35 +60,50 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
   const [generatedInvite, setGeneratedInvite] =
     useState<GeneratedInvite | null>(null);
 
-  // Mock teams where user is Admin or Manager
-  const [adminTeams] = useState<Team[]>([
-    {
-      id: "team-1",
-      name: "Frontend Development",
-      projectName: "E-commerce Platform",
-      memberCount: 8,
-    },
-    {
-      id: "team-2",
-      name: "Backend Development",
-      projectName: "E-commerce Platform",
-      memberCount: 6,
-    },
-    {
-      id: "team-3",
-      name: "Mobile Team",
-      projectName: "Mobile Banking App",
-      memberCount: 5,
-    },
-    {
-      id: "team-4",
-      name: "Quality Assurance",
-      projectName: "Data Analytics Dashboard",
-      memberCount: 4,
-    },
-  ]);
+  // Admin teams state - now fetched from API
+  const [adminTeams, setAdminTeams] = useState<Team[]>([]);
 
-  const furl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  // Fetch admin teams from API
+  const fetchAdminTeams = async () => {
+    setIsLoadingTeams(true);
+    try {
+      const response = await axiosInstance.get("/teams/AdminTeams");
+
+      if (response.data.success && response.data.teams) {
+        setAdminTeams(response.data.teams);
+      } else {
+        showErrorMessage("Failed to fetch admin teams");
+      }
+    } catch (error: any) {
+      console.error("Error fetching admin teams:", error);
+
+      if (error.response) {
+        const status = error.response.status;
+        const message = error.response.data?.message || "Unknown error";
+
+        if (status === 401) {
+          showErrorMessage("Authentication required. Please login again.");
+        } else if (status === 403) {
+          showErrorMessage("You don't have permission to view admin teams.");
+        } else {
+          showErrorMessage(`Error fetching teams: ${message}`);
+        }
+      } else if (error.request) {
+        showErrorMessage("Network error. Please check your connection.");
+      } else {
+        showErrorMessage("An unexpected error occurred while fetching teams.");
+      }
+    } finally {
+      setIsLoadingTeams(false);
+    }
+  };
+
+  // Fetch teams when component mounts or when invite popup opens
+  useEffect(() => {
+    if (showInvitePopup && adminTeams.length === 0) {
+      fetchAdminTeams();
+    }
+  }, [showInvitePopup]);
 
   const getRoleDisplay = (role: string) => {
     switch (role) {
@@ -116,59 +137,87 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
     }
   };
 
+  const showErrorMessage = (message: string) => {
+    setErrorMessage(message);
+    setShowError(true);
+    setTimeout(() => setShowError(false), 4000);
+  };
+
+  const handleOpenInvitePopup = () => {
+    setShowInvitePopup(true);
+    // Reset form data when opening popup
+    setInviteData({
+      teamId: "",
+      role: "MEMBER",
+    });
+  };
+
   const handleGenerateInvite = async () => {
     if (!inviteData.teamId || !inviteData.role) {
+      showErrorMessage("Please select a team and role");
       return;
     }
 
     setIsGenerating(true);
     try {
-      // Mock invite generation
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const selectedTeam = adminTeams.find(
-        (team) => team.id === inviteData.teamId
-      );
-      const mockToken = `inv_${Math.random()
-        .toString(36)
-        .substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
-      const mockInviteLink = `${window.location.origin}/join-team/${mockToken}`;
-
-      const invite: GeneratedInvite = {
-        inviteLink: mockInviteLink,
-        teamName: selectedTeam?.name || "Unknown Team",
+      const response = await axiosInstance.post("/teams/invite", {
+        teamId: inviteData.teamId,
         role: inviteData.role,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-      };
-
-      setGeneratedInvite(invite);
-      setShowInvitePopup(false);
-      setShowGeneratedInvite(true);
-
-      // Uncomment for real API:
-      /*
-      const response = await fetch(`${furl}/teams/invite-link`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(inviteData),
       });
-      
-      const data = await response.json();
-      if (data.success) {
+
+      console.log("API Response:", response.data);
+
+      if (response.data.success && response.data.inviteLink) {
+        const selectedTeam = adminTeams.find(
+          (team) => team.id === inviteData.teamId
+        );
+
         setGeneratedInvite({
-          inviteLink: data.inviteLink,
-          teamName: selectedTeam?.name || 'Unknown Team',
+          inviteLink: response.data.inviteLink,
+          teamName: selectedTeam?.name || "Unknown Team",
           role: inviteData.role,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+          expiresAt: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000
+          ).toISOString(),
         });
+
+        setShowInvitePopup(false);
         setShowGeneratedInvite(true);
+
+        // Call the callback if provided
+        if (onInviteGenerated) {
+          onInviteGenerated();
+        }
+      } else {
+        showErrorMessage("Failed to generate invite link");
       }
-      */
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating invite:", error);
+
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const message = error.response.data?.message || "Unknown error";
+
+        if (status === 401) {
+          showErrorMessage("Authentication required. Please login again.");
+        } else if (status === 403) {
+          showErrorMessage(
+            "You don't have permission to create invites for this team."
+          );
+        } else if (status === 404) {
+          showErrorMessage("Team not found.");
+        } else {
+          showErrorMessage(`Error: ${message}`);
+        }
+      } else if (error.request) {
+        // Network error
+        showErrorMessage("Network error. Please check your connection.");
+      } else {
+        // Other error
+        showErrorMessage("An unexpected error occurred.");
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -183,6 +232,7 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
         setTimeout(() => setShowSuccess(false), 2000);
       } catch (error) {
         console.error("Failed to copy link:", error);
+        showErrorMessage("Failed to copy link to clipboard");
       }
     }
   };
@@ -230,11 +280,25 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
     }
   };
 
+  const getTeamInitial = (teamName: string, index: number) => {
+    return teamName.charAt(0).toUpperCase();
+  };
+
+  const getTeamGradient = (index: number) => {
+    const gradients = [
+      "from-cyan-500 to-blue-600",
+      "from-purple-500 to-pink-600",
+      "from-green-500 to-emerald-600",
+      "from-orange-500 to-red-600",
+    ];
+    return gradients[index % gradients.length];
+  };
+
   return (
     <>
       {/* Invite by Link Button */}
       <Button
-        onClick={() => setShowInvitePopup(true)}
+        onClick={handleOpenInvitePopup}
         variant="outline"
         className="bg-white/10 border-white/10 text-gray-400 text-white hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
       >
@@ -273,57 +337,74 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
                     <Label className="text-white mb-3 block font-medium">
                       Select Team
                     </Label>
-                    <div className="grid grid-cols-1 gap-3">
-                      {adminTeams.map((team, index) => (
-                        <button
-                          key={team.id}
-                          onClick={() =>
-                            setInviteData((prev) => ({
-                              ...prev,
-                              teamId: team.id,
-                            }))
-                          }
-                          className={`p-4 rounded-xl border transition-all duration-200 ease-out hover:scale-[1.01] ${
-                            inviteData.teamId === team.id
-                              ? "bg-cyan-500/20 border-cyan-500/50 shadow-lg shadow-cyan-500/20"
-                              : "bg-white/5 border-white/10 hover:border-white/20"
-                          }`}
+
+                    {isLoadingTeams ? (
+                      <div className="flex items-center justify-center p-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+                        <span className="ml-2 text-gray-400">
+                          Loading teams...
+                        </span>
+                      </div>
+                    ) : adminTeams.length === 0 ? (
+                      <div className="text-center p-8">
+                        <p className="text-gray-400 mb-3">
+                          No teams found where you are an admin or manager.
+                        </p>
+                        <Button
+                          onClick={fetchAdminTeams}
+                          variant="outline"
+                          className="border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out"
                         >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-10 h-10 rounded-lg bg-gradient-to-r ${
-                                index % 4 === 0
-                                  ? "from-cyan-500 to-blue-600"
-                                  : index % 4 === 1
-                                  ? "from-purple-500 to-pink-600"
-                                  : index % 4 === 2
-                                  ? "from-green-500 to-emerald-600"
-                                  : "from-orange-500 to-red-600"
-                              } flex items-center justify-center text-white font-bold text-sm shadow-lg`}
-                            >
-                              {team.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="text-left flex-1">
-                              <h5
-                                className={`font-medium ${
-                                  inviteData.teamId === team.id
-                                    ? "text-cyan-400"
-                                    : "text-white"
-                                }`}
+                          Retry
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {adminTeams.map((team, index) => (
+                          <button
+                            key={team.id}
+                            onClick={() =>
+                              setInviteData((prev) => ({
+                                ...prev,
+                                teamId: team.id,
+                              }))
+                            }
+                            className={`p-4 rounded-xl border transition-all duration-200 ease-out hover:scale-[1.01] ${
+                              inviteData.teamId === team.id
+                                ? "bg-cyan-500/20 border-cyan-500/50 shadow-lg shadow-cyan-500/20"
+                                : "bg-white/5 border-white/10 hover:border-white/20"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`w-10 h-10 rounded-lg bg-gradient-to-r ${getTeamGradient(
+                                  index
+                                )} flex items-center justify-center text-white font-bold text-sm shadow-lg`}
                               >
-                                {team.name}
-                              </h5>
-                              <p className="text-sm text-gray-400">
-                                {team.projectName} • {team.memberCount} members
-                              </p>
+                                {getTeamInitial(team.name, index)}
+                              </div>
+                              <div className="text-left flex-1">
+                                <h5
+                                  className={`font-medium ${
+                                    inviteData.teamId === team.id
+                                      ? "text-cyan-400"
+                                      : "text-white"
+                                  }`}
+                                >
+                                  {team.name}
+                                </h5>
+                                <p className="text-sm text-gray-400">
+                                  {team.projectName}
+                                </p>
+                              </div>
+                              {inviteData.teamId === team.id && (
+                                <CheckCircle className="w-5 h-5 text-cyan-400" />
+                              )}
                             </div>
-                            {inviteData.teamId === team.id && (
-                              <CheckCircle className="w-5 h-5 text-cyan-400" />
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Role Selection */}
@@ -413,11 +494,21 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
                     <Button
                       onClick={handleGenerateInvite}
                       disabled={
-                        !inviteData.teamId || !inviteData.role || isGenerating
+                        !inviteData.teamId ||
+                        !inviteData.role ||
+                        isGenerating ||
+                        isLoadingTeams
                       }
                       className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isGenerating ? "Generating..." : "Generate Invite"}
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        "Generate Invite"
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -516,7 +607,7 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
                       <Button
                         onClick={handleCopyLink}
                         variant="outline"
-                        className="border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
+                        className="border-white/10 bg-blue/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -532,7 +623,7 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
                       <Button
                         onClick={handleShareViaEmail}
                         variant="outline"
-                        className="border-white/10 text-gray-400 hover:text-white hover:border-blue-500 backdrop-blur-sm hover:bg-blue-500/10 transition-all duration-200 ease-out hover:scale-105"
+                        className="border-white/10 text-gray-400 hover:text-white hover:border-blue-500 backdrop-blur-sm bg-blue/10 hover:bg-blue-500/10 transition-all duration-200 ease-out hover:scale-105"
                       >
                         <Mail className="w-4 h-4 mr-2" />
                         Email
@@ -540,7 +631,7 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
                       <Button
                         onClick={handleShareViaWhatsApp}
                         variant="outline"
-                        className="border-white/10 text-gray-400 hover:text-white hover:border-green-500 backdrop-blur-sm hover:bg-green-500/10 transition-all duration-200 ease-out hover:scale-105"
+                        className="border-white/10 text-gray-400 bg-blue/10 hover:text-white hover:border-green-500 backdrop-blur-sm hover:bg-green-500/10 transition-all duration-200 ease-out hover:scale-105"
                       >
                         <MessageCircle className="w-4 h-4 mr-2" />
                         WhatsApp
@@ -560,7 +651,7 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
                     <Button
                       onClick={() => setShowGeneratedInvite(false)}
                       variant="outline"
-                      className="border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out"
+                      className="border-white/10 bg-blue/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out"
                     >
                       Done
                     </Button>
@@ -579,6 +670,18 @@ export function InviteLinkClient({ onInviteGenerated }: InviteLinkClientProps) {
             <div className="flex items-center gap-3">
               <CheckCircle className="w-5 h-5 text-green-400" />
               <p className="text-green-200 font-medium">{successMessage}</p>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {showError && (
+        <div className="fixed top-4 right-4 z-50">
+          <Card className="backdrop-blur-xl bg-red-500/20 border border-red-500/30 p-4 rounded-xl shadow-2xl">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400" />
+              <p className="text-red-200 font-medium">{errorMessage}</p>
             </div>
           </Card>
         </div>

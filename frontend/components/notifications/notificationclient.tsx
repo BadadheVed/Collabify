@@ -37,54 +37,60 @@ interface BackendNotification {
   read: boolean;
   createdAt: string;
   expiresAt: string;
-  type?: 'task' | 'team' | 'project' | 'mention' | 'system';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  type?: "task" | "team" | "project" | "mention" | "system";
+  priority?: "low" | "medium" | "high" | "urgent";
 }
 
 export function NotificationsPageClient() {
   const [notifications, setNotifications] = useState<BackendNotification[]>([]);
-  const [filter, setFilter] = useState<'ALL' | 'UNREAD' | 'READ'>('ALL');
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'task' | 'team' | 'project' | 'mention' | 'system'>('ALL');
-  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
-  const [selectedNotification, setSelectedNotification] = useState<BackendNotification | null>(null);
+  const [filter, setFilter] = useState<"ALL" | "UNREAD" | "READ">("ALL");
+  const [typeFilter, setTypeFilter] = useState<
+    "ALL" | "task" | "team" | "project" | "mention" | "system"
+  >("ALL");
+  const [selectedNotifications, setSelectedNotifications] = useState<string[]>(
+    []
+  );
+  const [selectedNotification, setSelectedNotification] =
+    useState<BackendNotification | null>(null);
   const [showNotificationDetail, setShowNotificationDetail] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setIsClient(true);
     loadNotifications();
   }, []);
 
-  const furl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+  const furl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
   const loadNotifications = async () => {
     setIsLoading(true);
     try {
       // Mock API call - replace with real API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       const mockNotifications: BackendNotification[] = [
         {
           id: "notif-1",
-          message: "You've been assigned to 'Implement User Authentication' in E-commerce Platform",
+          message:
+            "You've been assigned to 'Implement User Authentication' in E-commerce Platform",
           userId: "user-1",
           read: false,
           createdAt: "2024-02-15T10:30:00Z",
           expiresAt: "2024-03-15T10:30:00Z",
           type: "task",
-          priority: "high"
+          priority: "high",
         },
         {
-          id: "notif-2", 
+          id: "notif-2",
           message: "You've been invited to join Frontend Development team",
           userId: "user-1",
           read: false,
           createdAt: "2024-02-15T09:15:00Z",
           expiresAt: "2024-03-15T09:15:00Z",
           type: "team",
-          priority: "medium"
+          priority: "medium",
         },
         {
           id: "notif-3",
@@ -94,7 +100,7 @@ export function NotificationsPageClient() {
           createdAt: "2024-02-15T08:00:00Z",
           expiresAt: "2024-03-15T08:00:00Z",
           type: "task",
-          priority: "urgent"
+          priority: "urgent",
         },
         {
           id: "notif-4",
@@ -104,17 +110,18 @@ export function NotificationsPageClient() {
           createdAt: "2024-02-14T16:45:00Z",
           expiresAt: "2024-03-14T16:45:00Z",
           type: "project",
-          priority: "low"
+          priority: "low",
         },
         {
           id: "notif-5",
-          message: "David Wilson mentioned you in a comment on 'API Documentation'",
+          message:
+            "David Wilson mentioned you in a comment on 'API Documentation'",
           userId: "user-1",
           read: true,
           createdAt: "2024-02-14T14:20:00Z",
           expiresAt: "2024-03-14T14:20:00Z",
           type: "mention",
-          priority: "medium"
+          priority: "medium",
         },
         {
           id: "notif-6",
@@ -124,8 +131,8 @@ export function NotificationsPageClient() {
           createdAt: "2024-02-14T12:00:00Z",
           expiresAt: "2024-03-14T12:00:00Z",
           type: "system",
-          priority: "medium"
-        }
+          priority: "medium",
+        },
       ];
 
       setNotifications(mockNotifications);
@@ -138,53 +145,72 @@ export function NotificationsPageClient() {
 
   const getNotificationIcon = (type?: string) => {
     switch (type) {
-      case 'task': return CheckSquare;
-      case 'team': return Users;
-      case 'project': return FolderOpen;
-      case 'mention': return MessageCircle;
-      case 'system': return Settings;
-      default: return Bell;
+      case "task":
+        return CheckSquare;
+      case "team":
+        return Users;
+      case "project":
+        return FolderOpen;
+      case "mention":
+        return MessageCircle;
+      case "system":
+        return Settings;
+      default:
+        return Bell;
     }
   };
 
   const getNotificationColor = (type?: string) => {
     switch (type) {
-      case 'task': return 'text-green-400';
-      case 'team': return 'text-purple-400';
-      case 'project': return 'text-cyan-400';
-      case 'mention': return 'text-orange-400';
-      case 'system': return 'text-gray-400';
-      default: return 'text-blue-400';
+      case "task":
+        return "text-green-400";
+      case "team":
+        return "text-purple-400";
+      case "project":
+        return "text-cyan-400";
+      case "mention":
+        return "text-orange-400";
+      case "system":
+        return "text-gray-400";
+      default:
+        return "text-blue-400";
     }
   };
 
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
-      case 'urgent': return 'border-red-500/50 bg-red-500/10';
-      case 'high': return 'border-orange-500/50 bg-orange-500/10';
-      case 'medium': return 'border-yellow-500/50 bg-yellow-500/10';
-      case 'low': return 'border-gray-500/50 bg-gray-500/10';
-      default: return 'border-white/10 bg-white/5';
+      case "urgent":
+        return "border-red-500/50 bg-red-500/10";
+      case "high":
+        return "border-orange-500/50 bg-orange-500/10";
+      case "medium":
+        return "border-yellow-500/50 bg-yellow-500/10";
+      case "low":
+        return "border-gray-500/50 bg-gray-500/10";
+      default:
+        return "border-white/10 bg-white/5";
     }
   };
 
   const formatTimeAgo = (dateString: string) => {
     if (!isClient) return "Loading...";
-    
+
     try {
       const date = new Date(dateString);
       const now = new Date();
-      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      
+      const diffInMinutes = Math.floor(
+        (now.getTime() - date.getTime()) / (1000 * 60)
+      );
+
       if (diffInMinutes < 1) return "Just now";
       if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-      
+
       const diffInHours = Math.floor(diffInMinutes / 60);
       if (diffInHours < 24) return `${diffInHours}h ago`;
-      
+
       const diffInDays = Math.floor(diffInHours / 24);
       if (diffInDays < 7) return `${diffInDays}d ago`;
-      
+
       return date.toLocaleDateString();
     } catch (error) {
       return "Invalid date";
@@ -193,29 +219,31 @@ export function NotificationsPageClient() {
 
   const formatDetailedTime = (dateString: string) => {
     if (!isClient) return "Loading...";
-    
+
     try {
       const date = new Date(dateString);
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      
-      const timeString = date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
+
+      const timeString = date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
       });
-      
+
       if (date.toDateString() === today.toDateString()) {
         return `Today ${timeString}`;
       } else if (date.toDateString() === yesterday.toDateString()) {
         return `Yesterday ${timeString}`;
       } else {
-        return date.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric'
-        }) + ` ${timeString}`;
+        return (
+          date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }) + ` ${timeString}`
+        );
       }
     } catch (error) {
       return "Invalid date";
@@ -224,11 +252,9 @@ export function NotificationsPageClient() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === notificationId 
-            ? { ...notif, read: true }
-            : notif
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === notificationId ? { ...notif, read: true } : notif
         )
       );
     } catch (error) {
@@ -238,8 +264,8 @@ export function NotificationsPageClient() {
 
   const markAllAsRead = async () => {
     try {
-      setNotifications(prev => 
-        prev.map(notif => ({ ...notif, read: true }))
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, read: true }))
       );
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
@@ -248,8 +274,8 @@ export function NotificationsPageClient() {
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      setNotifications(prev => 
-        prev.filter(notif => notif.id !== notificationId)
+      setNotifications((prev) =>
+        prev.filter((notif) => notif.id !== notificationId)
       );
     } catch (error) {
       console.error("Error deleting notification:", error);
@@ -258,8 +284,8 @@ export function NotificationsPageClient() {
 
   const deleteSelected = async () => {
     try {
-      setNotifications(prev => 
-        prev.filter(notif => !selectedNotifications.includes(notif.id))
+      setNotifications((prev) =>
+        prev.filter((notif) => !selectedNotifications.includes(notif.id))
       );
       setSelectedNotifications([]);
     } catch (error) {
@@ -276,39 +302,39 @@ export function NotificationsPageClient() {
   };
 
   const toggleSelectNotification = (notificationId: string) => {
-    setSelectedNotifications(prev => 
+    setSelectedNotifications((prev) =>
       prev.includes(notificationId)
-        ? prev.filter(id => id !== notificationId)
+        ? prev.filter((id) => id !== notificationId)
         : [...prev, notificationId]
     );
   };
 
-  const filteredNotifications = notifications.filter(notif => {
+  const filteredNotifications = notifications.filter((notif) => {
     // Apply read/unread filter
-    if (filter === 'UNREAD' && notif.read) return false;
-    if (filter === 'READ' && !notif.read) return false;
-    
+    if (filter === "UNREAD" && notif.read) return false;
+    if (filter === "READ" && !notif.read) return false;
+
     // Apply type filter
-    if (typeFilter !== 'ALL' && notif.type !== typeFilter) return false;
-    
+    if (typeFilter !== "ALL" && notif.type !== typeFilter) return false;
+
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       return notif.message.toLowerCase().includes(query);
     }
-    
+
     return true;
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
   const totalCount = notifications.length;
 
   const getStats = () => {
     const stats = {
-      unread: notifications.filter(n => !n.read).length,
-      read: notifications.filter(n => n.read).length,
-      urgent: notifications.filter(n => n.priority === 'urgent').length,
-      total: notifications.length
+      unread: notifications.filter((n) => !n.read).length,
+      read: notifications.filter((n) => n.read).length,
+      urgent: notifications.filter((n) => n.priority === "urgent").length,
+      total: notifications.length,
     };
     return stats;
   };
@@ -361,7 +387,9 @@ export function NotificationsPageClient() {
               <Archive className="w-6 h-6 text-purple-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-purple-400">{stats.total}</p>
+              <p className="text-2xl font-bold text-purple-400">
+                {stats.total}
+              </p>
               <p className="text-purple-200 text-sm">Total</p>
             </div>
           </div>
@@ -387,17 +415,17 @@ export function NotificationsPageClient() {
             {/* Read Status Filter */}
             <div className="flex gap-2">
               {[
-                { key: 'ALL', label: 'All' },
-                { key: 'UNREAD', label: 'Unread' },
-                { key: 'READ', label: 'Read' }
+                { key: "ALL", label: "All" },
+                { key: "UNREAD", label: "Unread" },
+                { key: "READ", label: "Read" },
               ].map((filterOption) => (
                 <button
                   key={filterOption.key}
                   onClick={() => setFilter(filterOption.key as any)}
                   className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105 ${
                     filter === filterOption.key
-                      ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-400'
-                      : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'
+                      ? "bg-cyan-500/20 border border-cyan-500/50 text-cyan-400"
+                      : "bg-white/5 border border-white/10 text-gray-400 hover:border-white/20"
                   }`}
                 >
                   {filterOption.label}
@@ -408,20 +436,20 @@ export function NotificationsPageClient() {
             {/* Type Filter */}
             <div className="flex gap-2">
               {[
-                { key: 'ALL', label: 'All Types' },
-                { key: 'task', label: 'Tasks' },
-                { key: 'team', label: 'Teams' },
-                { key: 'project', label: 'Projects' },
-                { key: 'mention', label: 'Mentions' },
-                { key: 'system', label: 'System' }
+                { key: "ALL", label: "All Types" },
+                { key: "task", label: "Tasks" },
+                { key: "team", label: "Teams" },
+                { key: "project", label: "Projects" },
+                { key: "mention", label: "Mentions" },
+                { key: "system", label: "System" },
               ].map((typeOption) => (
                 <button
                   key={typeOption.key}
                   onClick={() => setTypeFilter(typeOption.key as any)}
                   className={`px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ease-out hover:scale-105 ${
                     typeFilter === typeOption.key
-                      ? 'bg-purple-500/20 border border-purple-500/50 text-purple-400'
-                      : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'
+                      ? "bg-purple-500/20 border border-purple-500/50 text-purple-400"
+                      : "bg-white/5 border border-white/10 text-gray-400 hover:border-white/20"
                   }`}
                 >
                   {typeOption.label}
@@ -485,7 +513,7 @@ export function NotificationsPageClient() {
               </div>
             </div>
           </div>
-          
+
           {isLoading ? (
             <div className="p-8 text-center">
               <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
@@ -494,9 +522,13 @@ export function NotificationsPageClient() {
           ) : filteredNotifications.length === 0 ? (
             <div className="p-8 text-center">
               <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-white font-medium mb-2">No notifications found</h4>
+              <h4 className="text-white font-medium mb-2">
+                No notifications found
+              </h4>
               <p className="text-gray-400 text-sm">
-                {searchQuery ? `No notifications match "${searchQuery}"` : "You're all caught up!"}
+                {searchQuery
+                  ? `No notifications match "${searchQuery}"`
+                  : "You're all caught up!"}
               </p>
             </div>
           ) : (
@@ -505,12 +537,14 @@ export function NotificationsPageClient() {
                 const Icon = getNotificationIcon(notification.type);
                 const iconColor = getNotificationColor(notification.type);
                 const priorityStyle = getPriorityColor(notification.priority);
-                
+
                 return (
                   <div
                     key={notification.id}
                     className={`p-6 hover:bg-white/5 transition-all duration-200 ease-out cursor-pointer group ${
-                      !notification.read ? 'bg-cyan-500/5 border-l-4 border-cyan-500/50' : ''
+                      !notification.read
+                        ? "bg-cyan-500/5 border-l-4 border-cyan-500/50"
+                        : ""
                     } ${priorityStyle}`}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -518,29 +552,37 @@ export function NotificationsPageClient() {
                       <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
-                          checked={selectedNotifications.includes(notification.id)}
+                          checked={selectedNotifications.includes(
+                            notification.id
+                          )}
                           onChange={(e) => {
                             e.stopPropagation();
                             toggleSelectNotification(notification.id);
                           }}
                           className="rounded border-gray-600 bg-gray-700 hover:border-cyan-500 transition-colors duration-200"
                         />
-                        <div className={`w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0 ${
-                          !notification.read ? 'bg-cyan-500/20' : ''
-                        }`}>
+                        <div
+                          className={`w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0 ${
+                            !notification.read ? "bg-cyan-500/20" : ""
+                          }`}
+                        >
                           <Icon className={`w-5 h-5 ${iconColor}`} />
                         </div>
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <p className={`text-sm line-clamp-2 ${
-                            !notification.read ? 'text-white font-medium' : 'text-gray-300'
-                          }`}>
+                          <p
+                            className={`text-sm line-clamp-2 ${
+                              !notification.read
+                                ? "text-white font-medium"
+                                : "text-gray-300"
+                            }`}
+                          >
                             {notification.message}
                           </p>
                           <div className="flex items-center gap-2">
-                            {notification.priority === 'urgent' && (
+                            {notification.priority === "urgent" && (
                               <div className="px-2 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-medium border border-red-500/30">
                                 Urgent
                               </div>
@@ -561,20 +603,24 @@ export function NotificationsPageClient() {
                             </Button>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center justify-between mt-3">
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              <span>{formatTimeAgo(notification.createdAt)}</span>
+                              <span>
+                                {formatTimeAgo(notification.createdAt)}
+                              </span>
                             </div>
                             {notification.type && (
                               <div className="flex items-center gap-1">
-                                <span className="capitalize">{notification.type}</span>
+                                <span className="capitalize">
+                                  {notification.type}
+                                </span>
                               </div>
                             )}
                           </div>
-                          
+
                           <Button
                             size="sm"
                             variant="ghost"
@@ -605,10 +651,12 @@ export function NotificationsPageClient() {
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-600/20 rounded-2xl blur opacity-50" />
             <Card className="relative backdrop-blur-xl bg-gray-900/95 border border-white/20 rounded-2xl overflow-hidden shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
-              
+
               {/* Header */}
               <div className="relative z-10 flex items-center justify-between p-4 border-b border-white/10">
-                <h3 className="text-lg font-semibold text-white">Notification Details</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Notification Details
+                </h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -623,18 +671,28 @@ export function NotificationsPageClient() {
               <div className="relative z-10 p-6">
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg ${getPriorityColor(selectedNotification.priority)} flex items-center justify-center`}>
+                    <div
+                      className={`w-10 h-10 rounded-lg ${getPriorityColor(selectedNotification.priority)} flex items-center justify-center`}
+                    >
                       {(() => {
-                        const Icon = getNotificationIcon(selectedNotification.type);
-                        const iconColor = getNotificationColor(selectedNotification.type);
+                        const Icon = getNotificationIcon(
+                          selectedNotification.type
+                        );
+                        const iconColor = getNotificationColor(
+                          selectedNotification.type
+                        );
                         return <Icon className={`w-5 h-5 ${iconColor}`} />;
                       })()}
                     </div>
                     <div className="flex-1">
                       <p className="text-white font-medium">
-                        {selectedNotification.type?.charAt(0).toUpperCase() + selectedNotification.type?.slice(1)} Notification
+                        {selectedNotification.type
+                          ? `${selectedNotification.type.charAt(0).toUpperCase()}${selectedNotification.type.slice(1)} Notification`
+                          : "Notification"}
                       </p>
-                      <p className="text-gray-400 text-sm">{formatDetailedTime(selectedNotification.createdAt)}</p>
+                      <p className="text-gray-400 text-sm">
+                        {formatDetailedTime(selectedNotification.createdAt)}
+                      </p>
                     </div>
                   </div>
 
@@ -648,13 +706,13 @@ export function NotificationsPageClient() {
                     <div>
                       <span className="text-gray-400">Status:</span>
                       <span className="text-white ml-2">
-                        {selectedNotification.read ? 'Read' : 'Unread'}
+                        {selectedNotification.read ? "Read" : "Unread"}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-400">Priority:</span>
                       <span className="text-white ml-2 capitalize">
-                        {selectedNotification.priority || 'Normal'}
+                        {selectedNotification.priority || "Normal"}
                       </span>
                     </div>
                   </div>

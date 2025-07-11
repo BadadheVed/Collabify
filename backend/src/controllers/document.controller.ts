@@ -1,4 +1,5 @@
 import { db } from "@/DB_Client/db";
+import { handleDocumentCreated } from "@/services/notifications.service";
 import { Request, RequestHandler, Response } from "express";
 
 // POST /teams/:teamId/documents - Create document in a specific team
@@ -68,6 +69,7 @@ export const createDocument: RequestHandler = async (
         },
       },
     });
+    handleDocumentCreated(userId, newDoc.id, newDoc.title);
 
     res.status(201).json({
       message: "Document created successfully",

@@ -147,3 +147,22 @@ export const userSearch: RequestHandler = async (
     res.status(500).send("Internal Server Error");
   }
 };
+
+export const getAuth: RequestHandler = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+    });
+    return;
+  } catch (error) {
+    console.error("Error in user search:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};

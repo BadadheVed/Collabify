@@ -40,7 +40,7 @@ export const handleUserJoinTeam = async (teamId: string, userId: string) => {
   }
 };
 
-export const handleUserLeavTeam = async (teamId: string, userId: string) => {
+export const handleUserLeaveTeam = async (teamId: string, userId: string) => {
   try {
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return;
@@ -216,7 +216,6 @@ export const handleDocumentDeleted = async (
 
 export const TaskAssigned = async (
   userId: string,
-
   taskTitle: string
 ) => {
   try {

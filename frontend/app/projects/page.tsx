@@ -7,7 +7,7 @@ import { Search, Filter, Grid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-
+export const dynamic = 'force-dynamic';
 export default function ProjectsPage() {
   return (
     <DashboardLayout>

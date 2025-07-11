@@ -7,6 +7,7 @@ import {
   getTeamMembers,
   getUserTeams,
   getAdminTeams,
+  RejectInvite,
 } from "@/controllers/teams.controller";
 
 import {
@@ -39,6 +40,7 @@ teamRouter.get("/invite/validate/:token", ValidateInvite);
 
 // Accept invite link
 teamRouter.post("/invite/accept/:token", checkAuth, AcceptInvite);
+teamRouter.post("/invites/reject/:token", RejectInvite);
 teamRouter.get(
   "/:teamId/members",
   checkAuth,

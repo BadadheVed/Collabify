@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { DocumentsServer } from "@/components/documents/DocumentServer";
 import { DocumentsSkeleton } from "@/components/documents/Document-Skeleton";
-
+export const dynamic = 'force-dynamic';
 export default function DocumentsPage() {
   return (
     <DashboardLayout>

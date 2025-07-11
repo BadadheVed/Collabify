@@ -17,6 +17,7 @@ import Youtube from "@tiptap/extension-youtube";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { EditorView } from "prosemirror-view";
+import { useEffect, useState } from "react";
 import { DocumentSpinner } from "../primitives/Spinner";
 import { CustomTaskItem } from "./CustomTaskItem";
 import { StaticToolbar, SelectionToolbar } from "./Toolbars";
@@ -33,10 +34,13 @@ export function TextEditor() {
 
 // Collaborative text editor with simple rich text and live cursors
 export function Editor() {
+  const [mounted, setMounted] = useState(false);
   const liveblocks = useLiveblocksExtension();
 
   // Set up editor with plugins, and place user info into Yjs awareness and cursors
   const editor = useEditor({
+    // Add this to prevent SSR issues
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         // Add styles to editor element
@@ -131,6 +135,16 @@ export function Editor() {
   });
 
   const { threads } = useThreads();
+
+  // Ensure component only renders after client-side hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render until mounted on client
+  if (!mounted) {
+    return <DocumentSpinner />;
+  }
 
   return (
     <div className={styles.container}>

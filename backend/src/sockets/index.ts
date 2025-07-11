@@ -3,7 +3,7 @@ let io: Server;
 export const initSocketServer = (server: any) => {
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: process.env.FRONTEND_URL, // Replace with your frontend URL
       credentials: true,
     },
   });
