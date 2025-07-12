@@ -1,10 +1,16 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+var _express = require("express");
+var _dashboard = require("../controllers/dashboard.controller");
+var _roles = require("../middlewares/roles");
 //import { DashBoard } from "@/controllers/dashboard.controller";
-const express_1 = require("express");
-const dashboard_controller_1 = require("@/controllers/dashboard.controller");
-const roles_1 = require("@/middlewares/roles");
-const dashboard = (0, express_1.Router)();
+
+var dashboard = (0, _express.Router)();
 //ashboard.get("/", CheckRoles(["Admin"]), DashBoard);
-dashboard.get("/tiledata", roles_1.checkAuth, dashboard_controller_1.getTileData);
-exports.default = dashboard;
+dashboard.get("/tiledata", _roles.checkAuth, _dashboard.getTileData);
+var _default = exports["default"] = dashboard;
+//# sourceMappingURL=dashboard.js.map

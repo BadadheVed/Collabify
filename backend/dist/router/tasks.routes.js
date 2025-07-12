@@ -1,14 +1,19 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const tasks_controller_1 = require("@/controllers/tasks.controller");
-const tasks2_controller_1 = require("@/controllers/tasks2.controller");
-const roles_1 = require("@/middlewares/roles");
-const taskRouter = (0, express_1.Router)();
-taskRouter.post("/create", roles_1.checkAuth, tasks_controller_1.createAndAssignTask);
-taskRouter.patch("/update/:taskId", roles_1.checkAuth, tasks_controller_1.updateTask);
-taskRouter.delete("/delete/:taskId", roles_1.checkAuth, tasks_controller_1.deleteTask);
-taskRouter.patch("/status/:taskId", roles_1.checkAuth, tasks_controller_1.ChangeStatus);
-taskRouter.get("/user/MyTasks", roles_1.checkAuth, tasks2_controller_1.getUserTasks);
-taskRouter.get("/all/:teamId", roles_1.checkAuth, tasks_controller_1.getTasksForTeam); // OR use GetTasks
-exports.default = taskRouter;
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+var _express = require("express");
+var _tasks = require("../controllers/tasks.controller");
+var _tasks2 = require("../controllers/tasks2.controller");
+var _roles = require("../middlewares/roles");
+var taskRouter = (0, _express.Router)();
+taskRouter.post("/create", _roles.checkAuth, _tasks.createAndAssignTask);
+taskRouter.patch("/update/:taskId", _roles.checkAuth, _tasks.updateTask);
+taskRouter["delete"]("/delete/:taskId", _roles.checkAuth, _tasks.deleteTask);
+taskRouter.patch("/status/:taskId", _roles.checkAuth, _tasks.ChangeStatus);
+taskRouter.get("/user/MyTasks", _roles.checkAuth, _tasks2.getUserTasks);
+taskRouter.get("/all/:teamId", _roles.checkAuth, _tasks.getTasksForTeam); // OR use GetTasks
+var _default = exports["default"] = taskRouter;
+//# sourceMappingURL=tasks.routes.js.map

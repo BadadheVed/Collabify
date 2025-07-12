@@ -1,11 +1,16 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const roles_1 = require("@/middlewares/roles");
-const liveblocks_controller_1 = require("@/controllers/liveblocks.controller");
-const user_controller_1 = require("@/controllers/user.controller");
-const liveblocksRouter = (0, express_1.Router)();
-liveblocksRouter.post("/auth", roles_1.checkAuth, liveblocks_controller_1.authLiveblocks);
-liveblocksRouter.get("/LiveUsers", user_controller_1.UsersLive);
-liveblocksRouter.get("/searchUsers", user_controller_1.userSearch);
-exports.default = liveblocksRouter;
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+var _express = require("express");
+var _roles = require("../middlewares/roles");
+var _liveblocks = require("../controllers/liveblocks.controller");
+var _user = require("../controllers/user.controller");
+var liveblocksRouter = (0, _express.Router)();
+liveblocksRouter.post("/auth", _roles.checkAuth, _liveblocks.authLiveblocks);
+liveblocksRouter.get("/LiveUsers", _user.UsersLive);
+liveblocksRouter.get("/searchUsers", _user.userSearch);
+var _default = exports["default"] = liveblocksRouter;
+//# sourceMappingURL=liveblocks.route.js.map

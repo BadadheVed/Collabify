@@ -3,10 +3,13 @@ import { buildNotificationMessage } from "./notificationPayload";
 import { getIO } from "@/sockets";
 import { addDays } from "date-fns";
 
-const io = getIO();
+// Remove this line - don't call getIO() at module level
+// const io = getIO();
 
 export const handleUserJoinTeam = async (teamId: string, userId: string) => {
   try {
+    const io = getIO(); // Get IO instance when function is called
+
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
@@ -42,6 +45,8 @@ export const handleUserJoinTeam = async (teamId: string, userId: string) => {
 
 export const handleUserLeaveTeam = async (teamId: string, userId: string) => {
   try {
+    const io = getIO(); // Get IO instance when function is called
+
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
@@ -80,6 +85,8 @@ export const handleProjectCreated = async (
 ) => {
   // Pj name is the ProjectName
   try {
+    const io = getIO(); // Get IO instance when function is called
+
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return;
     const message = buildNotificationMessage("PROJECT_CREATED", {
@@ -115,6 +122,8 @@ export const handleProjectDeleted = async (
   Pjname: string
 ) => {
   try {
+    const io = getIO(); // Get IO instance when function is called
+
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return;
     const message = buildNotificationMessage("PROJECT_DELETED", {
@@ -150,6 +159,8 @@ export const handleDocumentCreated = async (
   DocTitle: string
 ) => {
   try {
+    const io = getIO(); // Get IO instance when function is called
+
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return;
     const message = buildNotificationMessage("DOCUMENT_CREATED", {
@@ -185,6 +196,8 @@ export const handleDocumentDeleted = async (
   DocTitle: string
 ) => {
   try {
+    const io = getIO(); // Get IO instance when function is called
+
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return;
     const message = buildNotificationMessage("DOCUMENT_DELETED", {
@@ -214,11 +227,10 @@ export const handleDocumentDeleted = async (
   }
 };
 
-export const TaskAssigned = async (
-  userId: string,
-  taskTitle: string
-) => {
+export const TaskAssigned = async (userId: string, taskTitle: string) => {
   try {
+    const io = getIO(); // Get IO instance when function is called
+
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) return;
     const message = buildNotificationMessage("TASK_ASSIGNED", {

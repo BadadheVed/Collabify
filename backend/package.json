@@ -1,10 +1,21 @@
 {
+  "name": "backend",
+  "version": "1.0.0",
+  "_moduleAliases": {
+    "@": "dist"
+  },
   "devDependencies": {
+    "@babel/cli": "^7.24.8",
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.4",
+    "@babel/preset-typescript": "^7.24.7",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.9",
+    "babel-plugin-module-resolver": "^5.0.2",
     "prisma": "^6.9.0",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
@@ -28,8 +39,6 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "nodemon --exec npx ts-node -r tsconfig-paths/register src/server.ts",
-    "build": "tsc"
-  },"_moduleAliases": {
-    "@": "./dist"
+    "build": "npx babel src --out-dir dist --extensions \".ts,.js\" --source-maps"
   }
 }

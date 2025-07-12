@@ -1,24 +1,34 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const teams_controller_1 = require("@/controllers/teams.controller");
-const roles_1 = require("@/middlewares/roles");
-const teamRouter = (0, express_1.Router)();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+var _express = require("express");
+var _teams = require("../controllers/teams.controller");
+var _roles = require("../middlewares/roles");
+var teamRouter = (0, _express.Router)();
+
 // Create a new team
 // teamRouter.post(
 //   "/:projectId/create",
 //   checkAuth,
+
 //   CreateTeam
 // );
-teamRouter.post("/create", roles_1.checkAuth, teams_controller_1.CreateTeam);
+
+teamRouter.post("/create", _roles.checkAuth, _teams.CreateTeam);
 // Generate invite link
-teamRouter.post("/invite", roles_1.checkAuth, teams_controller_1.InviteByLink);
+teamRouter.post("/invite", _roles.checkAuth, _teams.InviteByLink);
+
 // Validate invite token
-teamRouter.get("/invite/validate/:token", teams_controller_1.ValidateInvite);
+teamRouter.get("/invite/validate/:token", _teams.ValidateInvite);
+
 // Accept invite link
-teamRouter.post("/invite/accept/:token", roles_1.checkAuth, teams_controller_1.AcceptInvite);
-teamRouter.post("/invites/reject/:token", teams_controller_1.RejectInvite);
-teamRouter.get("/:teamId/members", roles_1.checkAuth, teams_controller_1.getTeamMembers);
-teamRouter.get("/MyTeams", roles_1.checkAuth, teams_controller_1.getUserTeams);
-teamRouter.get("/AdminTeams", roles_1.checkAuth, teams_controller_1.getAdminTeams);
-exports.default = teamRouter;
+teamRouter.post("/invite/accept/:token", _roles.checkAuth, _teams.AcceptInvite);
+teamRouter.post("/invites/reject/:token", _teams.RejectInvite);
+teamRouter.get("/:teamId/members", _roles.checkAuth, _teams.getTeamMembers);
+teamRouter.get("/MyTeams", _roles.checkAuth, _teams.getUserTeams);
+teamRouter.get("/AdminTeams", _roles.checkAuth, _teams.getAdminTeams);
+var _default = exports["default"] = teamRouter;
+//# sourceMappingURL=teams.routes.js.map

@@ -1,0 +1,1 @@
+{"version":3,"file":"db.js","names":["_client","require","db","exports","PrismaClient"],"sources":["../../src/DB_Client/db.ts"],"sourcesContent":["import { PrismaClient } from \"@prisma/client\";\r\nexport const db = new PrismaClient();\r\n"],"mappings":";;;;;;AAAA,IAAAA,OAAA,GAAAC,OAAA;AACO,IAAMC,EAAE,GAAAC,OAAA,CAAAD,EAAA,GAAG,IAAIE,oBAAY,CAAC,CAAC","ignoreList":[]}

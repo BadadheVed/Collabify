@@ -1,15 +1,22 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const teams_controller_1 = require("@/controllers/teams.controller");
-const tasks2_controller_1 = require("@/controllers/tasks2.controller");
-const roles_1 = require("@/middlewares/roles");
-const projectRouter = (0, express_1.Router)();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+var _express = require("express");
+var _teams = require("../controllers/teams.controller");
+var _tasks = require("../controllers/tasks2.controller");
+var _roles = require("../middlewares/roles");
+var projectRouter = (0, _express.Router)();
+
 // Create a new project
-projectRouter.post("/", roles_1.checkAuth, teams_controller_1.CreateProject);
+projectRouter.post("/", _roles.checkAuth, _teams.CreateProject);
+
 // Delete a specific project
-projectRouter.delete("/:projectId/delete", roles_1.checkAuth, teams_controller_1.deleteProject);
-projectRouter.get("/UserProjects", roles_1.checkAuth, teams_controller_1.getAllMyProjects);
-projectRouter.get("/:projectId/teams", roles_1.checkAuth, tasks2_controller_1.getProjectTeams);
-projectRouter.get("/GetAdminProjects", roles_1.checkAuth, teams_controller_1.getAdminProjects);
-exports.default = projectRouter;
+projectRouter["delete"]("/:projectId/delete", _roles.checkAuth, _teams.deleteProject);
+projectRouter.get("/UserProjects", _roles.checkAuth, _teams.getAllMyProjects);
+projectRouter.get("/:projectId/teams", _roles.checkAuth, _tasks.getProjectTeams);
+projectRouter.get("/GetAdminProjects", _roles.checkAuth, _teams.getAdminProjects);
+var _default = exports["default"] = projectRouter;
+//# sourceMappingURL=project.routes.js.map

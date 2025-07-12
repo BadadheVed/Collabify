@@ -1,30 +1,32 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getIO = exports.initSocketServer = void 0;
-const socket_io_1 = require("socket.io");
-let io;
-const initSocketServer = (server) => {
-    io = new socket_io_1.Server(server, {
-        cors: {
-            origin: process.env.FRONTEND_URL, // Replace with your frontend URL
-            credentials: true,
-        },
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.initSocketServer = exports.getIO = void 0;
+var _socket = require("socket.io");
+var io;
+var initSocketServer = exports.initSocketServer = function initSocketServer(server) {
+  io = new _socket.Server(server, {
+    cors: {
+      origin: process.env.FRONTEND_URL,
+      // Replace with your frontend URL
+      credentials: true
+    }
+  });
+  io.on("connection", function (socket) {
+    console.log("Socket ".concat(socket.id, " connected"));
+    socket.on("join-room", function (userId) {
+      socket.join(userId);
+      console.log("User ".concat(userId, " joined their private room"));
     });
-    io.on("connection", (socket) => {
-        console.log(`Socket ${socket.id} connected`);
-        socket.on("join-room", (userId) => {
-            socket.join(userId);
-            console.log(`User ${userId} joined their private room`);
-        });
-        socket.on("disconnect", () => {
-            console.log("Socket disconnected:", socket.id);
-        });
+    socket.on("disconnect", function () {
+      console.log("Socket disconnected:", socket.id);
     });
+  });
 };
-exports.initSocketServer = initSocketServer;
-const getIO = () => {
-    if (!io)
-        throw new Error("Socket.io not initialized");
-    return io;
+var getIO = exports.getIO = function getIO() {
+  if (!io) throw new Error("Socket.io not initialized");
+  return io;
 };
-exports.getIO = getIO;
+//# sourceMappingURL=index.js.map
