@@ -2,19 +2,19 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import { createServer } from "http"; // ADD THIS
+import { createServer } from "http";
 
 // Load environment variables first
-dotenv.config(); // MOVE THIS TO TOP
+dotenv.config();
 
 const app = express();
 
 // Create HTTP server
-const server = createServer(app); // ADD THIS
+const server = createServer(app);
 
 // Initialize Socket.io BEFORE importing routes
 import { initSocketServer } from "./sockets";
-initSocketServer(server); // CALL THIS
+initSocketServer(server);
 
 // MOVE ALL ROUTE IMPORTS HERE (after Socket.io init)
 import LoginRouter from "./router/auth.routes";
@@ -53,9 +53,9 @@ app.use("/notifications", notificationRouter);
 app.use("/projects", projectRouter);
 app.use("/liveblocks", liveblocksRouter);
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
-// Use server.listen instead of app.listen
-server.listen(PORT, () => {
+// FIXED: Added '0.0.0.0' host binding for Render
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Listening On The Port ${PORT}`);
 });
