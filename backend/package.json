@@ -23,7 +23,8 @@
     "socket.io": "^4.8.1",
     "zod": "^3.25.49"
   },
-  "scripts": {
-    "start": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts"
+ "scripts": {
+    "start": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
+    "build": "tsc"
   }
 }
