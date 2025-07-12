@@ -30,7 +30,7 @@ documentRouter.get("/get/:id", _document.getDocumentById);
 
 // Update (save) document content
 // PATCH /documents/:id
-documentRouter.patch("save/:id", _document.SaveDocument);
+documentRouter.patch("/save/:id", _document.SaveDocument);
 
 // Delete a document
 // DELETE /documents/:id

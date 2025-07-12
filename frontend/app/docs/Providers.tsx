@@ -13,7 +13,7 @@ type Props = {
 export function Providers({ children }: Props) {
   return (
     <LiveblocksProvider
-      // 🔐 Auth route to your Node.js backend
+      
       authEndpoint={async (roomId) => {
         if (!roomId) {
           throw new Error("Missing roomId");

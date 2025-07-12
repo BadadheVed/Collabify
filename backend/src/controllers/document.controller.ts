@@ -96,21 +96,6 @@ export const getDocumentById: RequestHandler = async (req, res) => {
   try {
     const document = await db.document.findUnique({
       where: { id },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        team: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
     });
 
     if (!document) {
@@ -133,19 +118,14 @@ export const getDocumentById: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Return the document with all fields including content
+    // ✅ Return only the required fields
     res.status(200).json({
       document: {
         id: document.id,
         title: document.title,
-        content: document.content, // This will include the JSON content
-        teamId: document.teamId,
-        ownerId: document.ownerId,
-        createdAt: document.createdAt,
-        updatedAt: document.updatedAt,
-        owner: document.owner,
-        team: document.team,
+        content: document.content,
       },
+      success: true,
     });
     return;
   } catch (error) {
@@ -382,7 +362,7 @@ export const SaveDocument: RequestHandler = async (
         },
       },
     });
-
+    console.log("Saved Document Now at", Date.now());
     res.status(200).json({
       message: "Document updated successfully",
       document: updatedDocument,

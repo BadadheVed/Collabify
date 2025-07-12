@@ -139,21 +139,6 @@ var getDocumentById = exports.getDocumentById = /*#__PURE__*/function () {
           return _db.db.document.findUnique({
             where: {
               id: id
-            },
-            include: {
-              owner: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true
-                }
-              },
-              team: {
-                select: {
-                  id: true,
-                  name: true
-                }
-              }
             }
           });
         case 2:
@@ -185,20 +170,14 @@ var getDocumentById = exports.getDocumentById = /*#__PURE__*/function () {
           });
           return _context2.a(2);
         case 5:
-          // Return the document with all fields including content
+          // ✅ Return only the required fields
           res.status(200).json({
             document: {
               id: document.id,
               title: document.title,
-              content: document.content,
-              // This will include the JSON content
-              teamId: document.teamId,
-              ownerId: document.ownerId,
-              createdAt: document.createdAt,
-              updatedAt: document.updatedAt,
-              owner: document.owner,
-              team: document.team
-            }
+              content: document.content
+            },
+            success: true
           });
           return _context2.a(2);
         case 6:
@@ -522,6 +501,7 @@ var SaveDocument = exports.SaveDocument = /*#__PURE__*/function () {
           });
         case 6:
           updatedDocument = _context5.v;
+          console.log("Saved Document Now at", Date.now());
           res.status(200).json({
             message: "Document updated successfully",
             document: updatedDocument

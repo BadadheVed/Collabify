@@ -12,6 +12,7 @@ import {
   ChevronRight,
   LogOut,
   DoorOpen,
+  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserInfo } from "@/hooks/userInfo";
@@ -43,7 +44,7 @@ const sidebarItems = [
   {
     title: "Tasks",
     href: "/tasks",
-    icon: FileText,
+    icon: CheckSquare,
     color: "text-cyan-400",
   },
   {

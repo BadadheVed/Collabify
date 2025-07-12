@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { RoomProvider } from "@liveblocks/react/suspense";
 import { ClientSideSuspense } from "@liveblocks/react";
 import { DocumentSpinner } from "./primitives/Spinner"; // You can customize this
-
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 type RoomProps = {
   children: ReactNode;
 };
