@@ -1,3 +1,4 @@
+import "module-alias/register";
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -56,6 +57,6 @@ app.use("/liveblocks", liveblocksRouter);
 const PORT = Number(process.env.PORT) || 5000;
 
 // FIXED: Added '0.0.0.0' host binding for Render
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Listening On The Port ${PORT}`);
 });
