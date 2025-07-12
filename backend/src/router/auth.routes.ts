@@ -1,4 +1,4 @@
-import { checkAuth } from "@/middlewares/roles";
+import { checkAuth } from "../middlewares/roles";
 import { login, SignUp } from "../controllers/login.controller";
 import { Router } from "express";
 import { getAuth } from "@/controllers/user.controller";
