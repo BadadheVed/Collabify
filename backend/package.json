@@ -21,10 +21,14 @@
     "nanoid": "^5.1.5",
     "nodemon": "^3.1.10",
     "socket.io": "^4.8.1",
+    "ts-node": "^10.9.2",
     "zod": "^3.25.49"
   },
- "scripts": {
-    "start": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
+ 
+  "scripts": {
+    "start": "npx ts-node -r tsconfig-paths/register src/server.ts",
+    "dev": "nodemon --exec npx ts-node -r tsconfig-paths/register src/server.ts",
     "build": "tsc"
   }
+
 }
