@@ -13,9 +13,74 @@ function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present,
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { if (r) i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n;else { var o = function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); }; o("next", 0), o("throw", 1), o("return", 2); } }, _regeneratorDefine2(e, r, n, t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+// export const login: RequestHandler = async (req: Request, res: Response) => {
+//   try {
+//     const { email, password } = LoginSchema.parse(req.body);
+//     const User = await db.user.findUnique({
+//       where: {
+//         email: email,
+//       },
+//     });
+
+//     if (!User) {
+//       res.status(401).json({
+//         success: false,
+//         message: "Invalid email or password",
+//       });
+//       return;
+//     }
+
+//     const isMatch = await bcrypt.compare(password, User.password);
+//     if (!isMatch) {
+//       res.status(401).json({
+//         success: false,
+//         message: "Invalid email or password",
+//       });
+//       return;
+//     }
+//     const payload = {
+//       id: User.id,
+//       email: User.email,
+//       name: User.name,
+//     };
+//     const token = await generateToken(payload);
+//     if (!token) {
+//       res.status(500).json({
+//         message: "Error Generating Token",
+//         success: false,
+//       });
+//       return;
+//     }
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       secure: false,
+//       sameSite: "lax",
+//       maxAge: 24 * 60 * 60 * 1000,
+//     });
+//     res.status(200).json({
+//       message: "Logged In Successfully",
+//       name: payload.name,
+//       success: true,
+//     });
+//   } catch (error: any) {
+//     if (error.name === "ZodError") {
+//       res.status(400).json({
+//         success: false,
+//         message: "Validation failed",
+//         errors: error.errors,
+//       });
+//       return;
+//     }
+//     console.error("Sign in error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//     });
+//   }
+// };
 var login = exports.login = /*#__PURE__*/function () {
   var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(req, res) {
-    var _LoginSchema$parse, email, password, User, isMatch, payload, token, _t;
+    var _LoginSchema$parse, email, password, User, isMatch, payload, token, userName, isProduction, isDevelopment, cookieOptions, _t;
     return _regenerator().w(function (_context) {
       while (1) switch (_context.p = _context.n) {
         case 0:
@@ -57,57 +122,65 @@ var login = exports.login = /*#__PURE__*/function () {
             id: User.id,
             email: User.email,
             name: User.name
-          };
-          _context.n = 5;
-          return (0, _Tokens.generateToken)(payload);
-        case 5:
-          token = _context.v;
-          if (token) {
-            _context.n = 6;
-            break;
-          }
-          res.status(500).json({
-            message: "Error Generating Token",
-            success: false
-          });
-          return _context.a(2);
-        case 6:
-          res.cookie("token", token, {
+          }; // Assuming you have validated the user and generated a token
+          token = "your-generated-jwt-token"; // Replace with actual token generation
+          userName = "User Name"; // Replace with actual user data
+          console.log("Login successful, setting cookie...");
+          console.log("Token:", token);
+          console.log("Request origin:", req.headers.origin);
+          console.log("Request host:", req.headers.host);
+
+          // Determine if we're in production
+          isProduction = process.env.NODE_ENV === "production";
+          isDevelopment = !isProduction; // Cookie options
+          cookieOptions = {
             httpOnly: true,
+            secure: isProduction,
+            // Only secure in production
+            sameSite: isProduction ? "none" : "lax",
+            // 'none' for cross-origin in production
+            maxAge: 24 * 60 * 60 * 1000,
+            // 24 hours
+            domain: isProduction ? undefined : undefined,
+            // Let browser handle domain
+            path: "/"
+          };
+          console.log("Cookie options:", cookieOptions);
+
+          // Set the cookie
+          res.cookie("token", token, cookieOptions);
+
+          // Also set a test cookie to verify cookies are working
+          res.cookie("test", "working", {
+            httpOnly: false,
+            // This one should be visible in devtools
             secure: false,
             sameSite: "lax",
             maxAge: 24 * 60 * 60 * 1000
           });
+          console.log("Cookies set, sending response...");
+
+          // Send response
           res.status(200).json({
+            success: true,
             message: "Logged In Successfully",
-            name: payload.name,
-            success: true
+            name: userName,
+            token: token // You might want to remove this in production for security
           });
-          _context.n = 9;
+          _context.n = 6;
           break;
-        case 7:
-          _context.p = 7;
+        case 5:
+          _context.p = 5;
           _t = _context.v;
-          if (!(_t.name === "ZodError")) {
-            _context.n = 8;
-            break;
-          }
-          res.status(400).json({
-            success: false,
-            message: "Validation failed",
-            errors: _t.errors
-          });
-          return _context.a(2);
-        case 8:
-          console.error("Sign in error:", _t);
+          console.error("Login error:", _t);
           res.status(500).json({
             success: false,
             message: "Internal server error"
           });
-        case 9:
+        case 6:
           return _context.a(2);
       }
-    }, _callee, null, [[0, 7]]);
+    }, _callee, null, [[0, 5]]);
   }));
   return function login(_x, _x2) {
     return _ref.apply(this, arguments);

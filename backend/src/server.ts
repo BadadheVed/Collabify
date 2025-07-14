@@ -33,7 +33,11 @@ app.use(cookieParser());
 const furl = process.env.FRONTEND_URL;
 app.use(
   cors({
-    origin: furl,
+    origin: [
+      furl as string,
+      "http://localhost:3000",
+      "https://collabify-site.vercel.app",
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
