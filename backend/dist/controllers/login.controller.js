@@ -123,8 +123,11 @@ var login = exports.login = /*#__PURE__*/function () {
             email: User.email,
             name: User.name
           }; // Assuming you have validated the user and generated a token
-          token = "your-generated-jwt-token"; // Replace with actual token generation
-          userName = "User Name"; // Replace with actual user data
+          _context.n = 5;
+          return (0, _Tokens.generateToken)(payload);
+        case 5:
+          token = _context.v;
+          userName = User.name;
           console.log("Login successful, setting cookie...");
           console.log("Token:", token);
           console.log("Request origin:", req.headers.origin);
@@ -167,20 +170,20 @@ var login = exports.login = /*#__PURE__*/function () {
             name: userName,
             token: token // You might want to remove this in production for security
           });
-          _context.n = 6;
+          _context.n = 7;
           break;
-        case 5:
-          _context.p = 5;
+        case 6:
+          _context.p = 6;
           _t = _context.v;
           console.error("Login error:", _t);
           res.status(500).json({
             success: false,
             message: "Internal server error"
           });
-        case 6:
+        case 7:
           return _context.a(2);
       }
-    }, _callee, null, [[0, 5]]);
+    }, _callee, null, [[0, 6]]);
   }));
   return function login(_x, _x2) {
     return _ref.apply(this, arguments);

@@ -454,7 +454,13 @@ export const getUserDocuments = async (req: Request, res: Response) => {
 
     const documents = await db.document.findMany({
       where: {
-        ownerId: userId,
+        team: {
+          members: {
+            some: {
+              userId: userId,
+            },
+          },
+        },
       },
       select: {
         id: true,

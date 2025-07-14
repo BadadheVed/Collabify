@@ -59,6 +59,7 @@ type AuthState =
 
 export function TeamInviteClient({ inviteToken }: TeamInviteClientProps) {
   const router = useRouter();
+
   const [inviteState, setInviteState] = useState<InviteState>("loading");
   const [authState, setAuthState] = useState<AuthState>("checking");
   const [invite, setInvite] = useState<TeamInvite | null>(null);
@@ -150,24 +151,16 @@ export function TeamInviteClient({ inviteToken }: TeamInviteClientProps) {
   };
 
   const handleAcceptInvite = async () => {
-    if (authState !== "authenticated") {
-      setAuthState("redirecting");
-      return;
-    }
-
     setInviteState("processing");
     try {
       const response = await axiosInstance.post(
         `teams/invite/accept/${inviteToken}`
       );
-
       if (response.data.success) {
         setInviteState("success");
-      } else {
-        setInviteState("error");
+        setTimeout(() => router.push("/teams"), 2000);
       }
     } catch (error: any) {
-      console.error("Error accepting invite:", error);
       if (error.response?.status === 401) {
         setAuthState("redirecting");
       } else {
@@ -319,7 +312,7 @@ export function TeamInviteClient({ inviteToken }: TeamInviteClientProps) {
                 const returnUrl = encodeURIComponent(
                   `/join-team/${inviteToken}`
                 );
-                router.push(`/login?returnUrl=${returnUrl}`);
+                window.location.href = `/login?returnUrl=${returnUrl}`;
               }}
               className="mt-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hover:scale-105 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-200 ease-out"
             >

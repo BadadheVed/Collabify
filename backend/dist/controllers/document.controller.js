@@ -632,7 +632,13 @@ var getUserDocuments = exports.getUserDocuments = /*#__PURE__*/function () {
           _context7.n = 2;
           return _db.db.document.findMany({
             where: {
-              ownerId: userId
+              team: {
+                members: {
+                  some: {
+                    userId: userId
+                  }
+                }
+              }
             },
             select: {
               id: true,

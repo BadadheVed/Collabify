@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { axiosInstance } from "@/axiosSetup/axios";
-import { useDashboardTileData } from "@/hooks/userTileData";
+
 interface Task {
   id: number;
   title: string;
@@ -28,17 +28,101 @@ interface Task {
   teamName: string;
 }
 
+interface TileData {
+  name: string;
+  projects: number;
+  teams: number;
+  teamMembers: number;
+  documents: number;
+}
+
 export default function DashboardPage() {
   const [isVisible, setIsVisible] = useState({
     stats: false,
     projects: false,
     activity: false,
   });
-  const data = useDashboardTileData();
+
+  // Replace the custom hook with direct state management
+  const [tileData, setTileData] = useState<TileData | null>(null);
+  const [tileDataLoading, setTileDataLoading] = useState(true);
+  const [tileDataError, setTileDataError] = useState<string | null>(null);
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [tasksError, setTasksError] = useState<string | null>(null);
-  const name = data?.name || "USER";
+
+  const [isClient, setIsClient] = useState(false);
+
+  // Handle client-side mounting
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Fetch tile data function
+  const fetchTileData = async (useCache: boolean = true) => {
+    try {
+      setTileDataLoading(true);
+      setTileDataError(null);
+
+      // Only use sessionStorage on client side
+      if (useCache && isClient) {
+        const cached = sessionStorage.getItem("tileData");
+        if (cached) {
+          setTileData(JSON.parse(cached));
+          setTileDataLoading(false);
+          return;
+        }
+      }
+
+      console.log("Fetching tile data from API");
+      const response = await axiosInstance.get("/dashboard/tiledata");
+
+      const data: TileData = {
+        name: response.data.name,
+        projects: response.data.projects,
+        teams: response.data.teams,
+        teamMembers: response.data.teamMembers,
+        documents: response.data.documents,
+      };
+
+      // Store in sessionStorage only on client side
+      if (isClient) {
+        sessionStorage.setItem("tileData", JSON.stringify(data));
+      }
+
+      setTileData(data);
+      console.log("Tile data fetched successfully");
+    } catch (error) {
+      console.error("Error fetching tile data:", error);
+      setTileDataError("Failed to load dashboard data");
+    } finally {
+      setTileDataLoading(false);
+    }
+  };
+
+  // Function to update tile data when activities change
+  const updateTileDataOnActivity = async () => {
+    console.log("Activity detected, refreshing tile data...");
+    await fetchTileData(false); // Force fetch without cache
+  };
+
+  // Function to clear tile data cache
+  const clearTileDataCache = () => {
+    if (isClient) {
+      sessionStorage.removeItem("tileData");
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    if (isClient) {
+      fetchTileData();
+    }
+  }, [isClient]);
+
+  const name = tileData?.name || "USER";
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible({
@@ -58,28 +142,28 @@ export default function DashboardPage() {
   const stats = [
     {
       title: "Projects",
-      value: data?.projects.toString() || "0",
+      value: tileData?.projects.toString() || "0",
       icon: FolderOpen,
       color: "from-cyan-500 to-blue-600",
       bgColor: "bg-cyan-500/10",
     },
     {
       title: "Team Members",
-      value: data?.teamMembers.toString() || "0",
+      value: tileData?.teamMembers.toString() || "0",
       icon: Users,
       color: "from-purple-500 to-pink-600",
       bgColor: "bg-purple-500/10",
     },
     {
       title: "Documents",
-      value: data?.documents.toString() || "0",
+      value: tileData?.documents.toString() || "0",
       icon: FileText,
       color: "from-green-500 to-emerald-600",
       bgColor: "bg-green-500/10",
     },
     {
       title: "Teams",
-      value: data?.teams.toString() || "0",
+      value: tileData?.teams.toString() || "0",
       icon: TrendingUp,
       color: "from-orange-500 to-red-600",
       bgColor: "bg-orange-500/10",
@@ -94,13 +178,23 @@ export default function DashboardPage() {
       const response = await axiosInstance.get("/tasks/user/MyTasks");
       console.log("User tasks fetching done successfully");
       const fetchedTasks: Task[] = response.data.tasks;
-      // setTasks(mockTasks);
       setTasks(fetchedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
       setTasksError("Error fetching tasks");
     } finally {
       setTasksLoading(false);
+    }
+  };
+
+  // Example function to handle activities that might change tile data
+  const handleActivityThatChangesData = async (activityType: string) => {
+    try {
+      await updateTileDataOnActivity();
+
+      await getRecentTasks();
+    } catch (error) {
+      console.error("Error handling activity:", error);
     }
   };
 
@@ -194,15 +288,34 @@ export default function DashboardPage() {
       "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
   };
 
+  // Stats Loading Component
+  const StatsLoading = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {[...Array(4)].map((_, index) => (
+        <Card
+          key={index}
+          className="backdrop-blur-xl bg-white/5 border border-white/10 p-6 rounded-2xl animate-pulse"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 rounded-xl bg-gray-700/30 border border-white/10">
+              <div className="w-6 h-6 bg-gray-600 rounded"></div>
+            </div>
+            <div className="text-right">
+              <div className="w-8 h-8 bg-gray-600 rounded"></div>
+            </div>
+          </div>
+          <div className="w-20 h-4 bg-gray-600 rounded"></div>
+        </Card>
+      ))}
+    </div>
+  );
+
   // Tasks Loading Component
   const TasksLoading = () => (
     <div className="space-y-4">
-      {/* Loading Progress Bar */}
       <div className="w-full bg-gray-700 rounded-full h-1 mb-4 overflow-hidden">
         <div className="bg-gradient-to-r from-cyan-500 to-purple-600 h-1 rounded-full animate-pulse"></div>
       </div>
-
-      {/* Skeleton Cards */}
       {[...Array(3)].map((_, index) => (
         <div
           key={index}
@@ -310,6 +423,23 @@ export default function DashboardPage() {
     );
   };
 
+  // Show loading state during initial render
+  if (!isClient) {
+    return (
+      <div className="space-y-8 relative">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="text-gray-300 text-lg">Loading...</p>
+          </div>
+        </div>
+        <StatsLoading />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 relative">
       {/* Welcome Header */}
@@ -322,57 +452,80 @@ export default function DashboardPage() {
             Welcome back, {name}! Here's what's happening with your projects.
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-200 ease-out backdrop-blur-sm border border-white/10">
-          <Plus className="w-4 h-4 mr-2" />
-          New Project
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchTileData(false)}
+            disabled={tileDataLoading}
+            className="text-gray-300 hover:text-white bg-white/10 hover:bg-white/10 backdrop-blur-sm transition-all duration-200 ease-out hover:scale-105 disabled:opacity-50"
+          >
+            {tileDataLoading ? "Refreshing..." : "Refresh Data"}
+          </Button>
+          <Button
+            className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-200 ease-out backdrop-blur-sm border border-white/10"
+            onClick={() => handleActivityThatChangesData("create_project")}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Project
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div
-        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 transition-all duration-800 ease-out ${
-          isVisible.stats
-            ? "translate-y-0 opacity-100"
-            : "translate-y-10 opacity-0"
-        }`}
-      >
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={stat.title}
-              className="relative group cursor-pointer"
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-              style={{ transformStyle: "preserve-3d" }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out"></div>
-              <Card className="relative backdrop-blur-xl bg-white/5 border border-white/10 p-6 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/30 transition-all duration-300 ease-out rounded-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl pointer-events-none" />
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <div
-                      className={`p-3 rounded-xl backdrop-blur-sm ${stat.bgColor} border border-white/10 transition-all duration-200 ease-out hover:scale-105`}
-                    >
-                      <Icon
-                        className={`w-6 h-6 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}
-                      />
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-white transition-all duration-200 ease-out">
-                        {stat.value}
+      {tileDataLoading ? (
+        <StatsLoading />
+      ) : tileDataError ? (
+        <div className="flex items-center justify-center p-8 text-red-400 bg-red-500/10 rounded-xl border border-red-500/20">
+          <AlertCircle className="w-5 h-5 mr-2" />
+          {tileDataError}
+        </div>
+      ) : (
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 transition-all duration-800 ease-out ${
+            isVisible.stats
+              ? "translate-y-0 opacity-100"
+              : "translate-y-10 opacity-0"
+          }`}
+        >
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={stat.title}
+                className="relative group cursor-pointer"
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                style={{ transformStyle: "preserve-3d" }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out"></div>
+                <Card className="relative backdrop-blur-xl bg-white/5 border border-white/10 p-6 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/30 transition-all duration-300 ease-out rounded-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl pointer-events-none" />
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div
+                        className={`p-3 rounded-xl backdrop-blur-sm ${stat.bgColor} border border-white/10 transition-all duration-200 ease-out hover:scale-105`}
+                      >
+                        <Icon
+                          className={`w-6 h-6 bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}
+                        />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-white transition-all duration-200 ease-out">
+                          {stat.value}
+                        </div>
                       </div>
                     </div>
+                    <h3 className="text-gray-200 font-medium transition-all duration-200 ease-out">
+                      {stat.title}
+                    </h3>
                   </div>
-                  <h3 className="text-gray-200 font-medium transition-all duration-200 ease-out">
-                    {stat.title}
-                  </h3>
-                </div>
-              </Card>
-            </div>
-          );
-        })}
-      </div>
+                </Card>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

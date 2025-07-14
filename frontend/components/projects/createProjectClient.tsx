@@ -9,13 +9,14 @@ import {
   FolderPlus,
   FileText,
   Lightbulb,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { axiosInstance } from "@/axiosSetup/axios";
-
+import { useDashboardContext } from "@/context/DashboardContext";
 interface CreateProjectData {
   name: string;
   description: string;
@@ -28,6 +29,7 @@ interface CreateProjectClientProps {
 export function CreateProjectClient({
   onProjectCreated,
 }: CreateProjectClientProps) {
+  const { refreshTileData } = useDashboardContext();
   const router = useRouter();
   const [showCreateProjectPopup, setShowCreateProjectPopup] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -39,6 +41,9 @@ export function CreateProjectClient({
       description: "",
     }
   );
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState<number | null>(null);
 
   const furl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -65,6 +70,7 @@ export function CreateProjectClient({
     }
   }, [showCreateProjectPopup, showSuccess]);
 
+  
   useEffect(() => {
     if (!showSuccess && successMessage) {
       // Clear success message
@@ -102,6 +108,7 @@ export function CreateProjectClient({
         console.log("Router refresh entered");
         router.refresh();
         console.log("Router refresh done");
+        await refreshTileData();
 
         // METHOD 2: Complete page reload (more reliable but less smooth)
         // window.location.reload();

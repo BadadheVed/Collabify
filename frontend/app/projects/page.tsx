@@ -1,13 +1,16 @@
 import { MyProjectsServer } from "@/components/projects/myProjectServer";
 import { MyProjectsSkeleton } from "@/components/projects/myProjectSkeleton";
 import { CreateProjectClient } from "@/components/projects/createProjectClient";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Search, Filter, Grid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-export const dynamic = 'force-dynamic';
+
+export const dynamic = "force-dynamic"; // This ensures the page is always dynamically rendered
+export const revalidate = 0;
+import { useDashboardTileData } from "@/hooks/userTileData";
 export default function ProjectsPage() {
   return (
     <DashboardLayout>
@@ -27,20 +30,10 @@ export default function ProjectsPage() {
 
         {/* My Projects Section with SSR */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-white mb-6 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-            My Projects
-          </h2>
-
-          <Suspense fallback={<MyProjectsSkeleton />}>
-            <MyProjectsServer />
-          </Suspense>
+          <MyProjectsServer />
         </div>
 
-        {/* Divider */}
         <div className="border-t border-gray-700/50 my-8" />
-
-        {/* All Projects Section - Static for now */}
-        {/* <AllProjectsSection /> */}
       </div>
     </DashboardLayout>
   );

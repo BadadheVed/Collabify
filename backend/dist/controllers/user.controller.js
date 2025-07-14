@@ -287,7 +287,7 @@ var getAuth = exports.getAuth = /*#__PURE__*/function () {
         case 1:
           _context6.p = 1;
           _t6 = _context6.v;
-          console.error("Error in user search:", _t6);
+          console.error("Error In Auth", _t6);
           res.status(500).send("Internal Server Error");
         case 2:
           return _context6.a(2);

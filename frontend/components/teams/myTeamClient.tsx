@@ -13,6 +13,7 @@ import {
   UserPlus,
   Plus,
   CheckCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,7 +63,52 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
     name: "",
     projectId: "",
   });
+  const [teams, setTeams] = useState<UserTeam[]>(initialTeams || []);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [isCooldownActive, setIsCooldownActive] = useState(false);
 
+  const fetchTeams = async () => {
+    try {
+      const response = await axiosInstance.get("/teams/MyTeams");
+      if (response.data.success) {
+        setTeams(response.data.teams);
+      }
+      return response.data.teams;
+    } catch (error) {
+      console.error("Error fetching teams:", error);
+      return [];
+    }
+  };
+
+  // Refresh handler with cooldown
+  const handleRefresh = async () => {
+    if (isCooldownActive) return;
+
+    setIsRefreshing(true);
+    try {
+      await fetchTeams();
+      // Activate cooldown
+      setIsCooldownActive(true);
+      setCooldown(30);
+
+      // Start countdown
+      const countdown = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdown);
+            setIsCooldownActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error("Refresh failed:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   // Mock projects for team creation
   const [userProjects] = useState<Project[]>([
     { id: "proj-1", name: "E-commerce Platform" },
@@ -109,33 +155,6 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
   const fetchTeamMembers = async (teamId: string) => {
     setIsMembersLoading(true);
     try {
-      // const mockMembers: TeamMember[] = [
-      //   {
-      //     id: "user-1",
-      //     name: "Alice Johnson",
-      //     email: "alice@company.com",
-      //     role: "LEAD",
-      //   },
-      //   {
-      //     id: "user-2",
-      //     name: "Bob Smith",
-      //     email: "bob@company.com",
-      //     role: "MEMBER",
-      //   },
-      //   {
-      //     id: "user-3",
-      //     name: "Carol Davis",
-      //     email: "carol@company.com",
-      //     role: "MEMBER",
-      //   },
-      //   {
-      //     id: "user-4",
-      //     name: "David Wilson",
-      //     email: "david@company.com",
-      //     role: "ADMIN",
-      //   },
-      // ];
-
       console.log("Fetching the team members");
       const response = await axiosInstance.get(`/teams/${teamId}/members`);
       console.log("team members fetched successfully");
@@ -235,6 +254,23 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
 
   return (
     <>
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="outline"
+          onClick={handleRefresh}
+          disabled={isRefreshing || isCooldownActive}
+          className="flex items-center gap-2 backdrop-blur-xl bg-white/5 border border-white/10 hover:border-cyan-500/50 hover:bg-cyan-500/20 hover:text-cyan-400 transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isRefreshing ? (
+            <RefreshCw className="w-4 h-4 animate-spin" />
+          ) : isCooldownActive ? (
+            `${cooldown}s`
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
+          <span>Refresh Teams</span>
+        </Button>
+      </div>
       {/* Teams Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {initialTeams.map((team, index) => {
@@ -255,10 +291,10 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
                       index % 4 === 0
                         ? "from-cyan-500 to-blue-600"
                         : index % 4 === 1
-                        ? "from-purple-500 to-pink-600"
-                        : index % 4 === 2
-                        ? "from-green-500 to-emerald-600"
-                        : "from-orange-500 to-red-600"
+                          ? "from-purple-500 to-pink-600"
+                          : index % 4 === 2
+                            ? "from-green-500 to-emerald-600"
+                            : "from-orange-500 to-red-600"
                     } flex items-center justify-center text-white font-bold text-lg shadow-lg transition-all duration-200 ease-out group-hover:scale-105`}
                   >
                     {team.teamName.charAt(0).toUpperCase()}
@@ -429,10 +465,10 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
                                       index % 4 === 0
                                         ? "from-cyan-500 to-blue-600"
                                         : index % 4 === 1
-                                        ? "from-purple-500 to-pink-600"
-                                        : index % 4 === 2
-                                        ? "from-green-500 to-emerald-600"
-                                        : "from-orange-500 to-red-600"
+                                          ? "from-purple-500 to-pink-600"
+                                          : index % 4 === 2
+                                            ? "from-green-500 to-emerald-600"
+                                            : "from-orange-500 to-red-600"
                                     } flex items-center justify-center text-white font-bold text-sm shadow-lg`}
                                   >
                                     {member.name.charAt(0).toUpperCase()}

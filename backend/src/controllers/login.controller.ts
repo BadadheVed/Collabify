@@ -101,8 +101,8 @@ export const login = async (req: Request, res: Response) => {
     };
 
     // Assuming you have validated the user and generated a token
-    const token = "your-generated-jwt-token"; // Replace with actual token generation
-    const userName = "User Name"; // Replace with actual user data
+    const token = await generateToken(payload);
+    const userName = User.name;
 
     console.log("Login successful, setting cookie...");
     console.log("Token:", token);

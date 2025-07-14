@@ -162,7 +162,7 @@ export const getAuth: RequestHandler = async (req: Request, res: Response) => {
     });
     return;
   } catch (error) {
-    console.error("Error in user search:", error);
+    console.error("Error In Auth", error);
     res.status(500).send("Internal Server Error");
   }
 };

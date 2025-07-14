@@ -18,6 +18,7 @@ import {
   SortDesc,
   CalendarDays,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -152,7 +153,9 @@ export function MyTasksClient({
   const [sortOption, setSortOption] = useState<SortOption>("DUE_DATE_ASC");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState<number | null>(null);
   // Admin teams for create task
   const [adminTeams, setAdminTeams] = useState<Team[]>([]);
 
@@ -205,6 +208,33 @@ export function MyTasksClient({
 
     return sorted;
   }, [tasks, filterStatus, sortOption, searchQuery]);
+
+  const refreshTasks = async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await axiosInstance.get("/tasks/user/MyTasks");
+      if (response.data.success) {
+        setTasks(response.data.tasks);
+        setLastRefreshed(Date.now()); // ← set the timestamp
+      }
+    } catch (error) {
+      console.error("Error refreshing tasks:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    const now = Date.now();
+    const cooldown = 30 * 1000; // 30 seconds
+
+    if (!lastRefreshed || now - lastRefreshed >= cooldown) {
+      refreshTasks();
+    } else {
+      const remaining = Math.ceil((cooldown - (now - lastRefreshed)) / 1000);
+      console.warn(`Please wait ${remaining}s before refreshing again.`);
+    }
+  };
 
   const getStatusCounts = () => {
     return {
@@ -422,18 +452,6 @@ export function MyTasksClient({
     }
   };
 
-  const refreshTasks = async () => {
-    try {
-      const response = await axiosInstance.get("/tasks/MyTasks");
-      if (response.data.success) {
-        setTasks(response.data.tasks);
-        console.log("🔄 Tasks refreshed successfully");
-      }
-    } catch (error) {
-      console.error("Error refreshing tasks:", error);
-    }
-  };
-
   const formatDateReliable = (dateString: string) => {
     if (!isClient) {
       return "Loading...";
@@ -488,6 +506,17 @@ export function MyTasksClient({
             </h2>
             <p className="text-gray-400 mt-1">Tasks assigned to you</p>
           </div>
+          <Button
+            onClick={() => handleRefresh()}
+            disabled={isRefreshing}
+            variant="outline"
+            className="bg-white/10 text-white border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
           <Button
             onClick={(e) => {
               e.preventDefault();
@@ -692,10 +721,10 @@ export function MyTasksClient({
                         index % 4 === 0
                           ? "from-cyan-500 to-blue-600"
                           : index % 4 === 1
-                          ? "from-purple-500 to-pink-600"
-                          : index % 4 === 2
-                          ? "from-green-500 to-emerald-600"
-                          : "from-orange-500 to-red-600"
+                            ? "from-purple-500 to-pink-600"
+                            : index % 4 === 2
+                              ? "from-green-500 to-emerald-600"
+                              : "from-orange-500 to-red-600"
                       } flex items-center justify-center text-white font-bold text-lg shadow-lg transition-all duration-200 ease-out group-hover:scale-105`}
                     >
                       {task.title.charAt(0).toUpperCase()}

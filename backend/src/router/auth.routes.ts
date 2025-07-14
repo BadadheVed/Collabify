@@ -7,7 +7,6 @@ const LoginRouter = Router();
 
 LoginRouter.post("/login", login);
 LoginRouter.post("/signup", SignUp);
-LoginRouter.post("/me", checkAuth, getAuth);
-
+LoginRouter.get("/me", checkAuth, getAuth);
 
 export default LoginRouter;

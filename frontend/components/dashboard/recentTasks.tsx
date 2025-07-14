@@ -31,33 +31,7 @@ async function fetchTasks(): Promise<Task[]> {
     return [];
   }
 }
-// Server-side data fetching
-// async function fetchTasks(): Promise<Task[]> {
-//   try {
-//     // Replace with your actual API endpoint
-//     const response = await fetch(
-//       `${process.env.NEXT_PUBLIC_API_URL}/tasks/user/MyTasks`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${process.env.API_TOKEN}`, // Handle auth appropriately
-//         },
-//         cache: "no-store", // Always fetch fresh data
-//       }
-//     );
 
-//     if (!response.ok) {
-//       throw new Error("Failed to fetch tasks");
-//     }
-
-//     const data = await response.json();
-//     return data.tasks || [];
-//   } catch (error) {
-//     console.error("Error fetching tasks:", error);
-//     return [];
-//   }
-// }
-
-// Loading component
 export function TasksLoading() {
   return (
     <div className="space-y-4">
@@ -138,7 +112,7 @@ export async function TasksContent() {
       </div>
     );
   }
-
+ 
   return (
     <div className="space-y-4">
       {tasks.slice(0, 5).map((task) => {
