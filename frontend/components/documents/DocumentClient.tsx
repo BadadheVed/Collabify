@@ -27,13 +27,14 @@ import {
   X,
   CheckCircle,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { CreateDocumentClient } from "./createDocument";
-
+import { axiosInstance } from "@/axiosSetup/axios";
 interface Document {
   id: string;
   title: string;
@@ -63,7 +64,9 @@ type FilterOption = "ALL" | "RECENT";
 
 export function DocumentsClient({ initialDocuments }: DocumentsClientProps) {
   const router = useRouter();
-
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [isCooldownActive, setIsCooldownActive] = useState(false);
   // Map initial documents to add computed fields
   const [documents, setDocuments] = useState<Document[]>(() =>
     initialDocuments.map((doc) => ({
@@ -244,6 +247,39 @@ export function DocumentsClient({ initialDocuments }: DocumentsClientProps) {
     }
   };
 
+  const refreshDocuments = async () => {
+    if (isCooldownActive) return;
+
+    setIsRefreshing(true);
+    try {
+      // Simulate API call to refresh documents
+
+      const response = await axiosInstance.get("/documents/UserDocuments");
+      if (response.data.success) {
+        setDocuments(response.data.documents);
+      }
+
+      // Activate cooldown
+      setIsCooldownActive(true);
+      setCooldown(30);
+
+      // Start countdown
+      const countdown = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdown);
+            setIsCooldownActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error("Refresh failed:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   const getSortLabel = (option: SortOption) => {
     switch (option) {
       case "UPDATED_DESC":
@@ -309,7 +345,26 @@ export function DocumentsClient({ initialDocuments }: DocumentsClientProps) {
             Documents you have access to ({documents.length})
           </p>
         </div>
-        <CreateDocumentClient />
+        <div className="flex gap-3">
+          {/* Refresh Button */}
+          <Button
+            onClick={refreshDocuments}
+            disabled={isRefreshing || isCooldownActive}
+            variant="outline"
+            className="flex items-center gap-2 backdrop-blur-xl bg-white/5 border border-white/10 hover:border-cyan-500/50 hover:bg-cyan-500/20 hover:text-cyan-400 transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isRefreshing ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : isCooldownActive ? (
+              `${cooldown}s`
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            <span>Refresh</span>
+          </Button>
+
+          <CreateDocumentClient />
+        </div>
       </div>
 
       {/* Filters and Search */}

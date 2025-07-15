@@ -217,6 +217,7 @@ export function MyTasksClient({
         setTasks(response.data.tasks);
         setLastRefreshed(Date.now()); // ← set the timestamp
       }
+      console.log("Refreshing Tasks");
     } catch (error) {
       console.error("Error refreshing tasks:", error);
     } finally {
@@ -506,17 +507,7 @@ export function MyTasksClient({
             </h2>
             <p className="text-gray-400 mt-1">Tasks assigned to you</p>
           </div>
-          <Button
-            onClick={() => handleRefresh()}
-            disabled={isRefreshing}
-            variant="outline"
-            className="bg-white/10 text-white border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
-          >
-            <RefreshCw
-              className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
+
           <Button
             onClick={(e) => {
               e.preventDefault();
@@ -591,6 +582,17 @@ export function MyTasksClient({
           >
             <Filter className="w-4 h-4 mr-2" />
             Filters
+          </Button>
+          <Button
+            onClick={() => handleRefresh()}
+            disabled={isRefreshing}
+            variant="outline"
+            className="bg-white/10 text-white border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105"
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+            Refresh
           </Button>
         </div>
 

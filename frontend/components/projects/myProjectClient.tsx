@@ -15,6 +15,7 @@ import {
   Shield,
   Trash2,
   CheckCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,7 +63,10 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
   const [isClient, setIsClient] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [deletedProjectName, setDeletedProjectName] = useState("");
-
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [isCooldownActive, setIsCooldownActive] = useState(false);
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -137,36 +141,6 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
   const fetchProjectTeams = async (projectId: string) => {
     setIsTeamsLoading(true);
     try {
-      const mockTeams: Team[] = [
-        {
-          id: "team-1",
-          name: "Frontend Development",
-          members: [
-            { name: "Alice Johnson", role: "LEAD" },
-            { name: "Bob Smith", role: "MEMBER" },
-            { name: "Carol Davis", role: "MEMBER" },
-          ],
-        },
-        {
-          id: "team-2",
-          name: "Backend Development",
-          members: [
-            { name: "David Wilson", role: "LEAD" },
-            { name: "Eva Brown", role: "MEMBER" },
-            { name: "Frank Miller", role: "MEMBER" },
-          ],
-        },
-        {
-          id: "team-3",
-          name: "Quality Assurance",
-          members: [
-            { name: "Grace Lee", role: "LEAD" },
-            { name: "Henry Taylor", role: "MEMBER" },
-          ],
-        },
-      ];
-
-      await new Promise((resolve) => setTimeout(resolve, 800));
       //setProjectTeams(mockTeams);
 
       // Uncomment for real API:
@@ -272,7 +246,41 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
     }
   };
 
-  if (initialProjects.length === 0) {
+  const refreshProjects = async () => {
+    if (isCooldownActive) return;
+
+    setIsRefreshing(true);
+    try {
+      // Simulate API call to refresh projects
+
+      const response = await axiosInstance.get("/projects/my-projects");
+      if (response.data.success) {
+        setProjects(response.data.projects);
+      }
+
+      // Activate cooldown
+      setIsCooldownActive(true);
+      setCooldown(30);
+
+      // Start countdown
+      const countdown = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdown);
+            setIsCooldownActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error("Refresh failed:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  if (projects.length === 0) {
     return (
       <Card className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 text-center rounded-2xl">
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl pointer-events-none" />
@@ -325,7 +333,7 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {initialProjects.map((project, index) => {
+        {projects.map((project, index) => {
           const roleDisplay = getRoleDisplay(project.role);
           const RoleIcon = roleDisplay.icon;
 
@@ -343,10 +351,10 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
                       index % 4 === 0
                         ? "from-cyan-500 to-blue-600"
                         : index % 4 === 1
-                        ? "from-purple-500 to-pink-600"
-                        : index % 4 === 2
-                        ? "from-green-500 to-emerald-600"
-                        : "from-orange-500 to-red-600"
+                          ? "from-purple-500 to-pink-600"
+                          : index % 4 === 2
+                            ? "from-green-500 to-emerald-600"
+                            : "from-orange-500 to-red-600"
                     } flex items-center justify-center text-white font-bold text-lg shadow-lg transition-all duration-200 ease-out group-hover:scale-105`}
                   >
                     {project.name.charAt(0).toUpperCase()}
@@ -528,10 +536,10 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
                                     index % 4 === 0
                                       ? "from-cyan-500 to-blue-600"
                                       : index % 4 === 1
-                                      ? "from-purple-500 to-pink-600"
-                                      : index % 4 === 2
-                                      ? "from-green-500 to-emerald-600"
-                                      : "from-orange-500 to-red-600"
+                                        ? "from-purple-500 to-pink-600"
+                                        : index % 4 === 2
+                                          ? "from-green-500 to-emerald-600"
+                                          : "from-orange-500 to-red-600"
                                   } flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all duration-200 ease-out group-hover:scale-105`}
                                 >
                                   {team.name.charAt(0).toUpperCase()}
