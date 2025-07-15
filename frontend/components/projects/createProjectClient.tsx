@@ -70,7 +70,6 @@ export function CreateProjectClient({
     }
   }, [showCreateProjectPopup, showSuccess]);
 
-  
   useEffect(() => {
     if (!showSuccess && successMessage) {
       // Clear success message
@@ -110,13 +109,19 @@ export function CreateProjectClient({
         console.log("Router refresh done");
         await refreshTileData();
 
-        // METHOD 2: Complete page reload (more reliable but less smooth)
-        // window.location.reload();
-
-        // METHOD 3: Navigate to the same page to trigger re-render
-        // router.push(window.location.pathname);
-
-        // Auto-hide success message after 3 seconds
+        try {
+          const existingProjects = sessionStorage.getItem("userProjects");
+          const projectsArray = existingProjects
+            ? JSON.parse(existingProjects)
+            : [];
+          const updatedProjects = [...projectsArray, res.data.project]; // assuming API returns the created project
+          sessionStorage.setItem(
+            "userProjects",
+            JSON.stringify(updatedProjects)
+          );
+        } catch (error) {
+          console.error("Error updating sessionStorage:", error);
+        }
         setTimeout(() => {
           setShowSuccess(false);
           // Additional refresh if needed

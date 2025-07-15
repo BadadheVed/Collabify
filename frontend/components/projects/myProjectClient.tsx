@@ -76,10 +76,19 @@ export function MyProjectsClient() {
     const fetchProjects = async () => {
       try {
         setIsLoading(true);
+        const cachedProjects = sessionStorage.getItem("userProjects");
+        if (cachedProjects) {
+          setProjects(JSON.parse(cachedProjects));
+          setIsLoading(false);
+        }
         const response = await axiosInstance.get("/projects/UserProjects");
 
         if (response.data.success && response.data.projects) {
           setProjects(response.data.projects);
+          sessionStorage.setItem(
+            "userProjects",
+            JSON.stringify(response.data.projects)
+          );
         } else {
           setProjects([]);
         }
@@ -211,13 +220,21 @@ export function MyProjectsClient() {
       const res = await axiosInstance.delete(
         `/projects/${selectedProject.id}/delete`
       );
-      const data = res.data;
+      if (res.data.success) {
+        // Store project name for success message
+        setDeletedProjectName(selectedProject.name);
 
-      // Store project name for success message
-      setDeletedProjectName(selectedProject.name);
+        // Update local state and sessionStorage
+        const updatedProjects = projects.filter(
+          (p) => p.id !== selectedProject.id
+        );
+        setProjects(updatedProjects);
+        sessionStorage.setItem("userProjects", JSON.stringify(updatedProjects));
 
-      // Close all popups after successful deletion
-      closePopup();
+        // Close all popups after successful deletion
+        closePopup();
+        // ... rest of existing code
+      }
 
       // Show success message
       setShowSuccessMessage(true);
@@ -303,6 +320,10 @@ export function MyProjectsClient() {
     }
   };
 
+  if (isLoading) {
+    return <MyProjectsSkeleton />;
+  }
+
   if (projects.length === 0) {
     return (
       <Card className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 text-center rounded-2xl">
@@ -321,9 +342,6 @@ export function MyProjectsClient() {
     );
   }
 
-  if (isLoading) {
-    return <MyProjectsSkeleton />;
-  }
   return (
     <>
       {/* Success Message Toast */}
