@@ -128,7 +128,6 @@ export function CreateProjectClient({
         if (onProjectCreated) {
           onProjectCreated();
         }
-
         // Close the success popup after data fetching is complete
         setTimeout(() => {
           setShowSuccess(false);

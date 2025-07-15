@@ -1,10 +1,11 @@
-import { MyTeamsServer } from "@/components/teams/myTeamServer";
 import { MyTeamsSkeleton } from "@/components/teams/myTeamSkeleton";
 import { Suspense } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { InviteLinkClient } from "@/components/teams/InviteByLink";
 import { CreateTeamClient } from "@/components/teams/CreateTeamClient";
 import { TeamsClientWrapper } from "@/components/teams/TeamClientWrapper";
+import { MyProjectsClient } from "@/components/projects/myProjectClient";
+import { MyTeamsClient } from "@/components/teams/myTeamClient";
 //import { useRouter } from "next/navigation";
 export const dynamic = "force-dynamic";
 export default function TeamsPage() {
@@ -35,7 +36,7 @@ export default function TeamsPage() {
         {/* My Teams Section with SSR */}
         <div className="space-y-6">
           <Suspense fallback={<MyTeamsSkeleton />}>
-            <MyTeamsServer />
+            <MyTeamsClient />
           </Suspense>
         </div>
       </div>

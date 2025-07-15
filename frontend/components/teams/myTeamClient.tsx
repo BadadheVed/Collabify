@@ -20,7 +20,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { axiosInstance } from "@/axiosSetup/axios";
-
+import { MyTeamsSkeleton } from "./myTeamSkeleton";
 interface UserTeam {
   teamId: string;
   teamName: string;
@@ -49,7 +49,7 @@ interface MyTeamsClientProps {
   initialTeams: UserTeam[];
 }
 
-export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
+export function MyTeamsClient() {
   const router = useRouter();
   const [selectedTeam, setSelectedTeam] = useState<UserTeam | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -63,23 +63,53 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
     name: "",
     projectId: "",
   });
-  const [teams, setTeams] = useState<UserTeam[]>(initialTeams || []);
+  const [teams, setTeams] = useState<UserTeam[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [isCooldownActive, setIsCooldownActive] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [userProjects, setUserProjects] = useState<Project[]>([]);
   const fetchTeams = async () => {
     try {
+      setIsLoading(true);
+
+      // Check sessionStorage first for cached data
+      const cachedTeams = sessionStorage.getItem("userTeams");
+      if (cachedTeams) {
+        const parsedTeams = JSON.parse(cachedTeams);
+        setTeams(parsedTeams);
+        // Don't set loading to false here, let API call complete
+      }
+
+      // Make API call
       const response = await axiosInstance.get("/teams/MyTeams");
+
       if (response.data.success) {
         setTeams(response.data.teams);
+        // Store in sessionStorage
+        sessionStorage.setItem(
+          "userTeams",
+          JSON.stringify(response.data.teams)
+        );
+      } else {
+        setTeams([]);
+        // Clear sessionStorage if API returns unsuccessful
+        sessionStorage.removeItem("userTeams");
       }
-      return response.data.teams;
     } catch (error) {
       console.error("Error fetching teams:", error);
-      return [];
+      // On error, keep cached data if available, otherwise empty array
+      const cachedTeams = sessionStorage.getItem("userTeams");
+      if (!cachedTeams) {
+        setTeams([]);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
+  useEffect(() => {
+    fetchTeams();
+  }, []);
 
   // Refresh handler with cooldown
   const handleRefresh = async () => {
@@ -110,12 +140,12 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
     }
   };
   // Mock projects for team creation
-  const [userProjects] = useState<Project[]>([
-    { id: "proj-1", name: "E-commerce Platform" },
-    { id: "proj-2", name: "Mobile Banking App" },
-    { id: "proj-3", name: "Data Analytics Dashboard" },
-    { id: "proj-4", name: "AI Content Generator" },
-  ]);
+  // const [userProjects] = useState<Project[]>([
+  //   { id: "proj-1", name: "E-commerce Platform" },
+  //   { id: "proj-2", name: "Mobile Banking App" },
+  //   { id: "proj-3", name: "Data Analytics Dashboard" },
+  //   { id: "proj-4", name: "AI Content Generator" },
+  // ]);
 
   useEffect(() => {
     setIsClient(true);
@@ -235,8 +265,11 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
       return "Invalid date";
     }
   };
+  if (isLoading) {
+    return <MyTeamsSkeleton />;
+  }
 
-  if (!initialTeams || initialTeams.length === 0) {
+  if (!teams || teams.length === 0) {
     return (
       <Card className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 text-center rounded-2xl">
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl pointer-events-none" />
@@ -259,7 +292,7 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
           variant="outline"
           onClick={handleRefresh}
           disabled={isRefreshing || isCooldownActive}
-          className="flex items-center gap-2 backdrop-blur-xl bg-white/5 border border-white/10 hover:border-cyan-500/50 hover:bg-cyan-500/20 hover:text-cyan-400 transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-white flex items-center gap-2 backdrop-blur-xl bg-white/5 border border-white/10 hover:border-cyan-500/50 hover:bg-cyan-500/20 hover:text-cyan-400 transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRefreshing ? (
             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -273,7 +306,7 @@ export function MyTeamsClient({ initialTeams }: MyTeamsClientProps) {
       </div>
       {/* Teams Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {initialTeams.map((team, index) => {
+        {teams.map((team, index) => {
           const roleDisplay = getRoleDisplay(team.role);
           const RoleIcon = roleDisplay.icon;
 
