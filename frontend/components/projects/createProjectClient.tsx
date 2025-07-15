@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { axiosInstance } from "@/axiosSetup/axios";
 import { useDashboardContext } from "@/context/DashboardContext";
+
 interface CreateProjectData {
   name: string;
   description: string;
@@ -70,17 +71,26 @@ export function CreateProjectClient({
     }
   }, [showCreateProjectPopup, showSuccess]);
 
-  useEffect(() => {
-    if (!showSuccess && successMessage) {
-      // Clear success message
-      setSuccessMessage("");
+  // Fetch all projects from backend
+  const fetchAllProjects = async () => {
+    try {
+      const response = await axiosInstance.get("/projects/UserProjects");
+      if (response.data.success && Array.isArray(response.data.projects)) {
+        // Validate project data structure
+        const validProjects = response.data.projects.filter(
+          (project: any) =>
+            project && typeof project === "object" && project.name
+        );
 
-      // Refresh the main page
-      if (onProjectCreated) {
-        onProjectCreated();
+        sessionStorage.setItem("userProjects", JSON.stringify(validProjects));
+        return validProjects;
       }
+      return [];
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      return [];
     }
-  }, [showSuccess, successMessage, onProjectCreated]);
+  };
 
   const handleCreateProject = async () => {
     if (!createProjectData.name.trim()) {
@@ -109,29 +119,25 @@ export function CreateProjectClient({
         console.log("Router refresh done");
         await refreshTileData();
 
-        try {
-          const existingProjects = sessionStorage.getItem("userProjects");
-          const projectsArray = existingProjects
-            ? JSON.parse(existingProjects)
-            : [];
-          const updatedProjects = [...projectsArray, res.data.project]; // assuming API returns the created project
-          sessionStorage.setItem(
-            "userProjects",
-            JSON.stringify(updatedProjects)
-          );
-        } catch (error) {
-          console.error("Error updating sessionStorage:", error);
+        // Fetch fresh project data from backend instead of manually updating
+        console.log("Fetching fresh project data...");
+        await fetchAllProjects();
+        console.log("Project data updated in sessionStorage");
+
+        // Call the callback if provided
+        if (onProjectCreated) {
+          onProjectCreated();
         }
+
+        // Close the success popup after data fetching is complete
         setTimeout(() => {
           setShowSuccess(false);
-          // Additional refresh if needed
-          if (onProjectCreated) {
-            onProjectCreated();
-          }
-        }, 2000);
+          setSuccessMessage("");
+        }, 2000); // Close after 2 seconds
       }
     } catch (error) {
       console.error("Error creating project:", error);
+      // Handle error - maybe show error message to user
     } finally {
       setIsCreating(false);
     }
@@ -140,6 +146,11 @@ export function CreateProjectClient({
   const closePopup = () => {
     setShowCreateProjectPopup(false);
     setCreateProjectData({ name: "", description: "" }); // Reset form
+  };
+
+  const closeSuccessPopup = () => {
+    setShowSuccess(false);
+    setSuccessMessage("");
   };
 
   return (
@@ -275,6 +286,16 @@ export function CreateProjectClient({
       {showSuccess && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-2xl border border-gray-700 p-6 max-w-sm w-full relative overflow-hidden shadow-2xl">
+            {/* Close button for success popup */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={closeSuccessPopup}
+              className="absolute top-2 right-2 text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 ease-out hover:scale-105 rounded-xl"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+
             {/* Success Content */}
             <div className="text-center">
               <div className="mb-4 flex justify-center">
@@ -286,12 +307,12 @@ export function CreateProjectClient({
               </p>
             </div>
 
-            {/* Animated Progress Bar */}
+            {/* Optional: Keep the progress bar for visual feedback */}
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700 rounded-b-2xl overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-green-400 to-green-600"
                 style={{
-                  animation: "progressBar 2s linear forwards",
+                  animation: "progressBar 3s linear forwards",
                 }}
               ></div>
             </div>
