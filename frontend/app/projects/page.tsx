@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 export const dynamic = "force-dynamic"; // This ensures the page is always dynamically rendered
 export const revalidate = 0;
 import { useDashboardTileData } from "@/hooks/userTileData";
+import { MyProjectsClient } from "@/components/projects/myProjectClient";
 export default function ProjectsPage() {
   return (
     <DashboardLayout>
@@ -30,7 +31,9 @@ export default function ProjectsPage() {
 
         {/* My Projects Section with SSR */}
         <div className="space-y-6">
-          <MyProjectsServer />
+          <Suspense fallback={<MyProjectsSkeleton />}>
+            <MyProjectsClient />
+          </Suspense>
         </div>
 
         <div className="border-t border-gray-700/50 my-8" />

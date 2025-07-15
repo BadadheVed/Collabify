@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { MyProjectsSkeleton } from "./myProjectSkeleton";
 import { useRouter } from "next/navigation";
 import {
   Calendar,
@@ -52,7 +53,7 @@ interface MyProjectsClientProps {
   initialProjects: Project[];
 }
 
-export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
+export function MyProjectsClient() {
   const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projectTeams, setProjectTeams] = useState<Team[]>([]);
@@ -66,9 +67,31 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [isCooldownActive, setIsCooldownActive] = useState(false);
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [isLoading, setIsLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>([]);
   useEffect(() => {
     setIsClient(true);
+  }, []);
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axiosInstance.get("/projects/UserProjects");
+
+        if (response.data.success && response.data.projects) {
+          setProjects(response.data.projects);
+        } else {
+          setProjects([]);
+        }
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+        setProjects([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
   }, []);
 
   // Disable/enable body scroll when any popup is active
@@ -298,6 +321,9 @@ export function MyProjectsClient({ initialProjects }: MyProjectsClientProps) {
     );
   }
 
+  if (isLoading) {
+    return <MyProjectsSkeleton />;
+  }
   return (
     <>
       {/* Success Message Toast */}
