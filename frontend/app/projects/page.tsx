@@ -1,4 +1,3 @@
-import { MyProjectsServer } from "@/components/projects/myProjectServer";
 import { MyProjectsSkeleton } from "@/components/projects/myProjectSkeleton";
 import { CreateProjectClient } from "@/components/projects/createProjectClient";
 import { Suspense, useState } from "react";
