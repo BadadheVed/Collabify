@@ -1,7 +1,8 @@
-import { MyTasksServer } from "@/components/tasks/myTasksServer";
+
 import { MyTasksSkeleton } from "@/components/tasks/myTasksSkeleton";
 import { Suspense } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { MyTasksClient } from "@/components/tasks/myTasksClient";
 export const dynamic = "force-dynamic";
 export default function TasksPage() {
   return (
@@ -12,7 +13,7 @@ export default function TasksPage() {
         {/* My Tasks Section with SSR */}
         <div className="space-y-6">
           <Suspense fallback={<MyTasksSkeleton />}>
-            <MyTasksServer />
+            <MyTasksClient />
           </Suspense>
         </div>
       </div>

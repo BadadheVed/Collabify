@@ -91,21 +91,44 @@ export function CreateDocumentClient({
           (team) => team.teamId === createDocumentData.teamId
         );
 
-        setSuccessMessage(
-          `Document "${createDocumentData.title}" created successfully in ${selectedTeam?.teamName}! You can now start collaborating with your team.`
-        );
-        setShowSuccess(true);
         setShowCreateDocumentPopup(false);
         setCreateDocumentData({ title: "", teamId: "" });
 
-        setTimeout(() => {
-          setShowSuccess(false);
-          // Refresh the page to fetch all documents again
-          window.location.reload();
-        }, 2000);
+        // Fetch updated documents and update session storage
+        try {
+          const documentsResponse = await axiosInstance.get(
+            "/documents/UserDocuments"
+          );
+          const documentsData = documentsResponse.data;
 
-        if (onDocumentCreated) {
-          onDocumentCreated();
+          // Update session storage with fetched documents
+          sessionStorage.setItem("documents", JSON.stringify(documentsData));
+
+          // Show success message after session storage is updated
+          setSuccessMessage(
+            `Document "${createDocumentData.title}" created successfully in ${selectedTeam?.teamName}! You can now start collaborating with your team.`
+          );
+          setShowSuccess(true);
+
+          setTimeout(() => {
+            setShowSuccess(false);
+            // Removed window.location.reload() since we're now updating data directly
+          }, 2000);
+
+          if (onDocumentCreated) {
+            onDocumentCreated();
+          }
+        } catch (fetchError) {
+          console.error("Error fetching documents:", fetchError);
+          // Still show success message even if fetching fails
+          setSuccessMessage(
+            `Document "${createDocumentData.title}" created successfully in ${selectedTeam?.teamName}! You can now start collaborating with your team.`
+          );
+          setShowSuccess(true);
+
+          setTimeout(() => {
+            setShowSuccess(false);
+          }, 2000);
         }
       }
     } catch (error) {
@@ -218,10 +241,10 @@ export function CreateDocumentClient({
                                   index % 4 === 0
                                     ? "from-cyan-500 to-blue-600"
                                     : index % 4 === 1
-                                    ? "from-purple-500 to-pink-600"
-                                    : index % 4 === 2
-                                    ? "from-green-500 to-emerald-600"
-                                    : "from-orange-500 to-red-600"
+                                      ? "from-purple-500 to-pink-600"
+                                      : index % 4 === 2
+                                        ? "from-green-500 to-emerald-600"
+                                        : "from-orange-500 to-red-600"
                                 } flex items-center justify-center text-white font-bold text-sm shadow-lg`}
                               >
                                 {team.teamName.charAt(0).toUpperCase()}

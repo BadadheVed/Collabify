@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { DocumentsServer } from "@/components/documents/DocumentServer";
+
 import { DocumentsSkeleton } from "@/components/documents/Document-Skeleton";
-export const dynamic = 'force-dynamic';
+import { DocumentsClient } from "@/components/documents/DocumentClient";
+export const dynamic = "force-dynamic";
 export default function DocumentsPage() {
   return (
     <DashboardLayout>
@@ -11,7 +12,7 @@ export default function DocumentsPage() {
 
         {/* Documents Content with SSR */}
         <Suspense fallback={<DocumentsSkeleton />}>
-          <DocumentsServer />
+          <DocumentsClient />
         </Suspense>
       </div>
     </DashboardLayout>

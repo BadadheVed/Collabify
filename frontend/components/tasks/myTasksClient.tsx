@@ -20,6 +20,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
+import { MyTasksSkeleton } from "./myTasksSkeleton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,59 +83,13 @@ const getCookie = (name: string): string | undefined => {
 };
 
 // Helper function to get JWT token from cookie
-const getJWTToken = (cookieName: string = "token"): string | null => {
-  const token = getCookie(cookieName);
-  return token || null;
-};
 
 // Helper function to parse JWT payload
-const parseJWTPayload = (token: string): any => {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error("Error parsing JWT payload:", error);
-    return null;
-  }
-};
-
-const isJWTExpired = (token: string): boolean => {
-  const payload = parseJWTPayload(token);
-  if (!payload || !payload.exp) return true;
-
-  const currentTime = Math.floor(Date.now() / 1000);
-  return payload.exp < currentTime;
-};
 
 // Complete helper function to get valid JWT token
-const getValidJWTToken = (cookieName: string = "token"): string | null => {
-  const token = getJWTToken(cookieName);
 
-  if (!token) {
-    console.warn("No JWT token found in cookie");
-    return null;
-  }
-
-  if (isJWTExpired(token)) {
-    console.warn("JWT token is expired");
-    return null;
-  }
-
-  return token;
-};
-
-export function MyTasksClient({
-  initialTasks,
-  currentUserId,
-}: MyTasksClientProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+export function MyTasksClient() {
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskPopup, setShowTaskPopup] = useState(false);
   const [showCreateTaskPopup, setShowCreateTaskPopup] = useState(false);
@@ -156,9 +111,42 @@ export function MyTasksClient({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   // Admin teams for create task
   const [adminTeams, setAdminTeams] = useState<Team[]>([]);
 
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        // Check session storage first
+        const cachedData = sessionStorage.getItem("userTasks");
+        if (cachedData) {
+          const parsedData = JSON.parse(cachedData);
+          setTasks(parsedData);
+          setIsLoading(false);
+          return;
+        }
+
+        // If no cached data, fetch from API
+        const response = await axiosInstance.get("/tasks/user/MyTasks");
+        if (response.data.success) {
+          const tasksData = response.data.tasks;
+          setTasks(tasksData);
+
+          // Store in session storage
+          sessionStorage.setItem("userTasks", JSON.stringify(tasksData));
+        }
+      } catch (error) {
+        console.error("Error loading tasks:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    setIsClient(true);
+    loadTasks();
+    loadAdminTeams();
+  }, []);
   useEffect(() => {
     setIsClient(true);
     loadAdminTeams();
@@ -214,12 +202,22 @@ export function MyTasksClient({
     try {
       const response = await axiosInstance.get("/tasks/user/MyTasks");
       if (response.data.success) {
-        setTasks(response.data.tasks);
-        setLastRefreshed(Date.now()); // ← set the timestamp
+        const tasksData = response.data.tasks;
+        setTasks(tasksData);
+        setLastRefreshed(Date.now());
+        // Update session storage with fresh data
+        sessionStorage.setItem("userTasks", JSON.stringify(tasksData));
+
+        console.log("✅ Tasks refreshed and sessionStorage updated");
       }
-      console.log("Refreshing Tasks");
     } catch (error) {
-      console.error("Error refreshing tasks:", error);
+      console.error("💥 Error refreshing tasks:", error);
+      // Optionally show error message for refresh failure
+      setErrorMessage("Failed to refresh tasks. Please try again.");
+      setShowError(true);
+      setTimeout(() => {
+        setShowError(false);
+      }, 3000);
     } finally {
       setIsRefreshing(false);
     }
@@ -393,11 +391,7 @@ export function MyTasksClient({
   // Fixed handleCreateTask function to work with CreateTaskPopup
   const handleCreateTask = async (taskData: CreateTaskData) => {
     console.log("📝 Creating task with data:", taskData);
-
-    // Use the improved JWT cookie helper
-
     try {
-      // Send only the fields that backend expects
       const response = await axiosInstance.post("/tasks/create", {
         title: taskData.title,
         description: taskData.description,
@@ -405,29 +399,45 @@ export function MyTasksClient({
         teamId: taskData.teamId,
         assignedToId: taskData.assignedToId,
       });
-
       console.log("✅ Task creation response:", response.data);
 
       if (response.data.success) {
-        setSuccessMessage(
-          `Task "${taskData.title}" created and assigned successfully!`
-        );
-        setShowSuccess(true);
+        // Close the create task popup immediately
         setShowCreateTaskPopup(false);
 
-        // Refresh tasks list
-        await refreshTasks();
+        // Immediately fetch updated tasks after creation
+        console.log("🔄 Fetching updated tasks after creation...");
+        const tasksResponse = await axiosInstance.get("/tasks/user/MyTasks");
 
-        setTimeout(() => {
-          setShowSuccess(false);
-        }, 3000);
+        if (tasksResponse.data.success) {
+          const updatedTasks = tasksResponse.data.tasks;
+
+          // Update state with fresh data
+          setTasks(updatedTasks);
+          setLastRefreshed(Date.now());
+
+          // Update sessionStorage with fresh data
+          sessionStorage.setItem("userTasks", JSON.stringify(updatedTasks));
+          console.log(
+            "✅ Tasks refreshed and sessionStorage updated after creation"
+          );
+
+          // Show success message after everything is updated
+          setSuccessMessage(
+            `Task "${taskData.title}" created and assigned successfully!`
+          );
+          setShowSuccess(true);
+          setTimeout(() => {
+            setShowSuccess(false);
+          }, 3000);
+        } else {
+          throw new Error("Failed to fetch updated tasks after creation");
+        }
       } else {
         throw new Error(response.data.message || "Failed to create task");
       }
     } catch (error: any) {
       console.error("💥 Error creating task:", error);
-
-      // Enhanced error handling based on error type
       let errorMsg = "Failed to create task. Please try again.";
 
       if (error.response?.status === 401) {
@@ -447,8 +457,6 @@ export function MyTasksClient({
       setTimeout(() => {
         setShowError(false);
       }, 3000);
-
-      // Re-throw the error so CreateTaskPopup knows the creation failed
       throw error;
     }
   };
@@ -489,6 +497,9 @@ export function MyTasksClient({
     return "text-gray-400"; // Future
   };
 
+  if (isLoading) {
+    return <MyTasksSkeleton />;
+  }
   if (tasks.length === 0) {
     return (
       <>

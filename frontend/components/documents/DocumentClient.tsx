@@ -35,6 +35,8 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { CreateDocumentClient } from "./createDocument";
 import { axiosInstance } from "@/axiosSetup/axios";
+import { DocumentsSkeleton } from "./Document-Skeleton";
+import { useCallback } from "react";
 interface Document {
   id: string;
   title: string;
@@ -62,20 +64,8 @@ type SortOption =
   | "SIZE_DESC";
 type FilterOption = "ALL" | "RECENT";
 
-export function DocumentsClient({ initialDocuments }: DocumentsClientProps) {
+export function DocumentsClient() {
   const router = useRouter();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
-  const [isCooldownActive, setIsCooldownActive] = useState(false);
-  // Map initial documents to add computed fields
-  const [documents, setDocuments] = useState<Document[]>(() =>
-    initialDocuments.map((doc) => ({
-      ...doc,
-      type: doc.type || "markdown",
-      size: getSizeString(doc.content),
-      shared: false,
-    }))
-  );
 
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,10 +73,58 @@ export function DocumentsClient({ initialDocuments }: DocumentsClientProps) {
   const [filterOption, setFilterOption] = useState<FilterOption>("ALL");
   const [showFilters, setShowFilters] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [isCooldownActive, setIsCooldownActive] = useState(false);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
+    fetchDocuments(); // Add this line
   }, []);
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+      // Check for sessionStorage only in client-side
+      let cachedDocuments = null;
+      if (typeof window !== "undefined") {
+        cachedDocuments = sessionStorage.getItem("documents");
+      }
+
+      if (cachedDocuments) {
+        setDocuments(JSON.parse(cachedDocuments));
+        setIsLoading(false);
+      }
+
+      const response = await axiosInstance.get("/documents/UserDocuments");
+      if (response.data.success) {
+        const docsWithSize = response.data.documents.map((doc: any) => ({
+          ...doc,
+          type: doc.type || "markdown",
+          size: getSizeString(doc.content),
+          shared: false,
+        }));
+
+        setDocuments(docsWithSize);
+
+        // Only update sessionStorage in client-side
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("documents", JSON.stringify(docsWithSize));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch documents:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleDocumentCreated = () => {
+    fetchDocuments(); // This will refresh the documents list
+  };
 
   // Compute size from content
   function getSizeString(content: any): string {
@@ -303,6 +341,9 @@ export function DocumentsClient({ initialDocuments }: DocumentsClientProps) {
     }
   };
 
+  if (isLoading) {
+    return <DocumentsSkeleton />;
+  }
   if (documents.length === 0) {
     return (
       <div className="space-y-6">
@@ -314,7 +355,7 @@ export function DocumentsClient({ initialDocuments }: DocumentsClientProps) {
             </h2>
             <p className="text-gray-400 mt-1">Documents you have access to</p>
           </div>
-          <CreateDocumentClient />
+          <CreateDocumentClient onDocumentCreated={handleDocumentCreated} />
         </div>
 
         <Card className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 text-center rounded-2xl">
@@ -363,7 +404,7 @@ export function DocumentsClient({ initialDocuments }: DocumentsClientProps) {
             <span>Refresh</span>
           </Button>
 
-          <CreateDocumentClient />
+          <CreateDocumentClient onDocumentCreated={handleDocumentCreated} />
         </div>
       </div>
 
