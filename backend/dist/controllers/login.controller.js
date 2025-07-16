@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.login = exports.SignUp = void 0;
+exports.logout = exports.login = exports.SignUp = void 0;
 var _db = require("../DB_Client/db");
 var _schema = require("../types/Zod/schema");
 var _bcrypt = _interopRequireDefault(require("bcrypt"));
@@ -254,12 +254,6 @@ var SignUp = exports.SignUp = /*#__PURE__*/function () {
           });
           return _context2.a(2);
         case 7:
-          res.cookie("token", token, {
-            httpOnly: true,
-            secure: false,
-            sameSite: "lax",
-            maxAge: 24 * 60 * 60 * 1000
-          });
           res.status(201).json({
             token: token,
             message: "Sign Up Successful",
@@ -281,6 +275,51 @@ var SignUp = exports.SignUp = /*#__PURE__*/function () {
   }));
   return function SignUp(_x3, _x4) {
     return _ref2.apply(this, arguments);
+  };
+}();
+var logout = exports.logout = /*#__PURE__*/function () {
+  var _ref3 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(req, res) {
+    var isProduction;
+    return _regenerator().w(function (_context3) {
+      while (1) switch (_context3.n) {
+        case 0:
+          try {
+            // Determine if we're in production (same logic as login)
+            isProduction = process.env.NODE_ENV === "production"; // Clear the main authentication cookie with same options as login
+            res.clearCookie("token", {
+              httpOnly: true,
+              secure: isProduction,
+              sameSite: isProduction ? "none" : "lax",
+              path: "/",
+              domain: undefined // Same as login
+            });
+
+            // Clear the test cookie too
+            res.clearCookie("test", {
+              httpOnly: false,
+              secure: false,
+              sameSite: "lax",
+              path: "/"
+            });
+            console.log("Cookies cleared, logging out user...");
+            res.status(200).json({
+              success: true,
+              message: "Logged out successfully"
+            });
+          } catch (error) {
+            console.error("Logout error:", error);
+            res.status(500).json({
+              success: false,
+              message: "Internal server error"
+            });
+          }
+        case 1:
+          return _context3.a(2);
+      }
+    }, _callee3);
+  }));
+  return function logout(_x5, _x6) {
+    return _ref3.apply(this, arguments);
   };
 }();
 //# sourceMappingURL=login.controller.js.map

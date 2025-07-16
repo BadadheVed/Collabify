@@ -189,12 +189,7 @@ export const SignUp: RequestHandler = async (req: Request, res: Response) => {
       });
       return;
     }
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+
     res.status(201).json({
       token: token,
       message: "Sign Up Successful",
@@ -209,5 +204,41 @@ export const SignUp: RequestHandler = async (req: Request, res: Response) => {
       message: "Internal server error",
     });
     return;
+  }
+};
+export const logout: RequestHandler = async (req: Request, res: Response) => {
+  try {
+    // Determine if we're in production (same logic as login)
+    const isProduction = process.env.NODE_ENV === "production";
+
+    // Clear the main authentication cookie with same options as login
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      path: "/",
+      domain: undefined, // Same as login
+    });
+
+    // Clear the test cookie too
+    res.clearCookie("test", {
+      httpOnly: false,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    console.log("Cookies cleared, logging out user...");
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };

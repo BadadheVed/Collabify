@@ -7,12 +7,11 @@ import {
   FolderOpen,
   TrendingUp,
   Clock,
-  Star,
   Plus,
   MoreHorizontal,
   AlertCircle,
   Calendar,
-  User,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,6 +35,14 @@ interface TileData {
   documents: number;
 }
 
+interface Notification {
+  id: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export default function DashboardPage() {
   const [isVisible, setIsVisible] = useState({
     stats: false,
@@ -51,6 +58,13 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [tasksError, setTasksError] = useState<string | null>(null);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [notificationsError, setNotificationsError] = useState<string | null>(
+    null
+  );
 
   const [isClient, setIsClient] = useState(false);
 
@@ -137,6 +151,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     getRecentTasks();
+    getNotifications();
   }, []);
 
   const stats = [
@@ -187,12 +202,30 @@ export default function DashboardPage() {
     }
   };
 
+  // Fetch notifications function
+  const getNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      setNotificationsError(null);
+      console.log("Fetching notifications");
+      const response = await axiosInstance.get("/notifications/");
+      console.log("Notifications fetching done successfully");
+      const fetchedNotifications: Notification[] = response.data.notifications;
+      setNotifications(fetchedNotifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      setNotificationsError("Error fetching notifications");
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
   // Example function to handle activities that might change tile data
   const handleActivityThatChangesData = async (activityType: string) => {
     try {
       await updateTileDataOnActivity();
-
       await getRecentTasks();
+      await getNotifications();
     } catch (error) {
       console.error("Error handling activity:", error);
     }
@@ -214,6 +247,28 @@ export default function DashboardPage() {
       return `${diffDays} days`;
     } else {
       return dueDate.toLocaleDateString();
+    }
+  };
+
+  // Format notification timestamp
+  const formatNotificationTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMinutes < 1) {
+      return "Just now";
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+    } else {
+      return date.toLocaleDateString();
     }
   };
 
@@ -244,30 +299,6 @@ export default function DashboardPage() {
     if (diffDays <= 3) return "medium";
     return "normal";
   };
-
-  const recentActivity = [
-    {
-      user: "Sarah Johnson",
-      action: "updated document",
-      target: "Project Requirements.docx",
-      time: "2 minutes ago",
-      avatar: "SJ",
-    },
-    {
-      user: "Mike Chen",
-      action: "created new project",
-      target: "E-commerce Platform",
-      time: "15 minutes ago",
-      avatar: "MC",
-    },
-    {
-      user: "Emily Davis",
-      action: "joined team",
-      target: "Design Team",
-      time: "1 hour ago",
-      avatar: "ED",
-    },
-  ];
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = e.currentTarget;
@@ -336,6 +367,27 @@ export default function DashboardPage() {
               <div className="h-3 bg-gray-700 rounded w-16"></div>
             </div>
             <div className="h-3 bg-gray-700 rounded w-24"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  // Notifications Loading Component
+  const NotificationsLoading = () => (
+    <div className="space-y-4">
+      {[...Array(3)].map((_, index) => (
+        <div
+          key={index}
+          className="animate-pulse p-3 rounded-xl border border-gray-700 bg-gray-800/30"
+        >
+          <div className="flex items-start space-x-3">
+            <div className="w-8 h-8 bg-gray-700 rounded-full"></div>
+            <div className="flex-1">
+              <div className="h-3 bg-gray-700 rounded w-full mb-2"></div>
+              <div className="h-3 bg-gray-700 rounded w-2/3 mb-2"></div>
+              <div className="h-2 bg-gray-700 rounded w-16"></div>
+            </div>
           </div>
         </div>
       ))}
@@ -419,6 +471,70 @@ export default function DashboardPage() {
             </div>
           );
         })}
+      </div>
+    );
+  };
+
+  // Notifications Content Component
+  const NotificationsContent = () => {
+    if (notificationsLoading) {
+      return <NotificationsLoading />;
+    }
+
+    if (notificationsError) {
+      return (
+        <div className="flex items-center justify-center p-8 text-red-400">
+          <AlertCircle className="w-5 h-5 mr-2" />
+          {notificationsError}
+        </div>
+      );
+    }
+
+    if (notifications.length === 0) {
+      return (
+        <div className="flex items-center justify-center p-8 text-gray-400">
+          <Bell className="w-5 h-5 mr-2" />
+          No notifications found
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {notifications.slice(0, 5).map((notification) => (
+          <div
+            key={notification.id}
+            className={`flex items-start space-x-3 hover:bg-white/5 p-3 rounded-xl transition-all duration-200 ease-out border ${
+              notification.read
+                ? "border-transparent hover:border-white/10"
+                : "border-cyan-500/30 bg-cyan-500/5"
+            } hover:scale-[1.01]`}
+          >
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-lg ${
+                notification.read
+                  ? "bg-gradient-to-r from-gray-400 to-gray-500 shadow-gray-500/30"
+                  : "bg-gradient-to-r from-cyan-400 to-purple-500 shadow-purple-500/30"
+              }`}
+            >
+              <Bell className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p
+                className={`text-sm ${notification.read ? "text-gray-300" : "text-white"} leading-relaxed`}
+              >
+                {notification.message}
+              </p>
+              <p className="text-xs text-gray-400 flex items-center mt-1">
+                <Clock className="w-3 h-3 mr-1" />
+                {formatNotificationTime(notification.createdAt)}
+              </p>
+            </div>
+            {!notification.read && (
+              <div className="w-2 h-2 rounded-full bg-cyan-400 mt-1 flex-shrink-0"></div>
+            )}
+          </div>
+        ))}
       </div>
     );
   };
@@ -562,7 +678,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Notifications */}
         <div
           className={`transition-all duration-800 ease-out delay-400 ${
             isVisible.activity
@@ -574,40 +690,23 @@ export default function DashboardPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl pointer-events-none" />
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white">
-                  Recent Activity
+                <h2 className="text-xl font-semibold text-white flex items-center">
+                  Recent Notifications
+                  {notificationsLoading && (
+                    <div className="ml-3 w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                  )}
                 </h2>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-gray-300 hover:text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-200 ease-out hover:scale-105"
+                  className="text-gray-300 hover:text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-200 ease-out hover:scale-105 disabled:opacity-50"
+                  onClick={getNotifications}
+                  disabled={notificationsLoading}
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="space-y-4">
-                {recentActivity.map((activity, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start space-x-3 hover:bg-white/5 p-2 rounded-xl transition-all duration-200 ease-out border border-transparent hover:border-white/10 hover:scale-[1.01]"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 flex items-center justify-center text-white text-xs font-semibold shadow-lg shadow-purple-500/30">
-                      {activity.avatar}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white">
-                        <span className="font-medium">{activity.user}</span>{" "}
-                        <span className="text-gray-300">{activity.action}</span>{" "}
-                        <span className="text-cyan-400">{activity.target}</span>
-                      </p>
-                      <p className="text-xs text-gray-400 flex items-center mt-1">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <NotificationsContent />
             </div>
           </Card>
         </div>

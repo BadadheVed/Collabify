@@ -24,11 +24,13 @@ import {
   Archive,
   Star,
   Bookmark,
+  RefreshCw, // Added RefreshCw icon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { axiosInstance } from "@/axiosSetup/axios";
 
 interface BackendNotification {
   id: string;
@@ -67,77 +69,21 @@ export function NotificationsPageClient() {
   const loadNotifications = async () => {
     setIsLoading(true);
     try {
-      // Mock API call - replace with real API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const mockNotifications: BackendNotification[] = [
-        {
-          id: "notif-1",
-          message:
-            "You've been assigned to 'Implement User Authentication' in E-commerce Platform",
-          userId: "user-1",
-          read: false,
-          createdAt: "2024-02-15T10:30:00Z",
-          expiresAt: "2024-03-15T10:30:00Z",
-          type: "task",
-          priority: "high",
-        },
-        {
-          id: "notif-2",
-          message: "You've been invited to join Frontend Development team",
-          userId: "user-1",
-          read: false,
-          createdAt: "2024-02-15T09:15:00Z",
-          expiresAt: "2024-03-15T09:15:00Z",
-          type: "team",
-          priority: "medium",
-        },
-        {
-          id: "notif-3",
-          message: "Task 'Design Product Catalog UI' is due tomorrow",
-          userId: "user-1",
-          read: false,
-          createdAt: "2024-02-15T08:00:00Z",
-          expiresAt: "2024-03-15T08:00:00Z",
-          type: "task",
-          priority: "urgent",
-        },
-        {
-          id: "notif-4",
-          message: "Carol Davis completed 'Setup CI/CD Pipeline'",
-          userId: "user-1",
-          read: true,
-          createdAt: "2024-02-14T16:45:00Z",
-          expiresAt: "2024-03-14T16:45:00Z",
-          type: "project",
-          priority: "low",
-        },
-        {
-          id: "notif-5",
-          message:
-            "David Wilson mentioned you in a comment on 'API Documentation'",
-          userId: "user-1",
-          read: true,
-          createdAt: "2024-02-14T14:20:00Z",
-          expiresAt: "2024-03-14T14:20:00Z",
-          type: "mention",
-          priority: "medium",
-        },
-        {
-          id: "notif-6",
-          message: "System maintenance scheduled for tonight at 2:00 AM",
-          userId: "user-1",
-          read: false,
-          createdAt: "2024-02-14T12:00:00Z",
-          expiresAt: "2024-03-14T12:00:00Z",
-          type: "system",
-          priority: "medium",
-        },
-      ];
-
-      setNotifications(mockNotifications);
-    } catch (error) {
+      console.log("Fetching the Notifications from:", furl);
+      const response = await axiosInstance.get("/notifications/");
+      console.log("Notifications response:", response.data);
+      if (response.data.success) {
+        setNotifications(response.data.notifications);
+      } else {
+        console.error("Failed to load notifications:", response.data.message);
+      }
+    } catch (error: any) {
       console.error("Error loading notifications:", error);
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        // Handle authentication error
+        console.error("Authentication failed");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -252,23 +198,51 @@ export function NotificationsPageClient() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      setNotifications((prev) =>
-        prev.map((notif) =>
-          notif.id === notificationId ? { ...notif, read: true } : notif
-        )
+      const response = await axiosInstance.patch(
+        `/notifications/${notificationId}/mark-read`
       );
-    } catch (error) {
+
+      if (response.data.success) {
+        setNotifications((prev) =>
+          prev.map((notif) =>
+            notif.id === notificationId ? { ...notif, read: true } : notif
+          )
+        );
+      } else {
+        console.error(
+          "Failed to mark notification as read:",
+          response.data.message
+        );
+      }
+    } catch (error: any) {
       console.error("Error marking notification as read:", error);
+      if (error.response?.status === 401) {
+        console.error("Authentication failed");
+      }
     }
   };
 
   const markAllAsRead = async () => {
     try {
-      setNotifications((prev) =>
-        prev.map((notif) => ({ ...notif, read: true }))
+      const response = await axiosInstance.patch(
+        "/notifications/mark-all-read"
       );
-    } catch (error) {
+
+      if (response.data.success) {
+        setNotifications((prev) =>
+          prev.map((notif) => ({ ...notif, read: true }))
+        );
+      } else {
+        console.error(
+          "Failed to mark all notifications as read:",
+          response.data.message
+        );
+      }
+    } catch (error: any) {
       console.error("Error marking all notifications as read:", error);
+      if (error.response?.status === 401) {
+        console.error("Authentication failed");
+      }
     }
   };
 
@@ -484,8 +458,22 @@ export function NotificationsPageClient() {
             </div>
           )}
 
-          {/* Quick Actions */}
+          {/* Quick Actions - Added Refresh Button Here */}
           <div className="flex gap-2">
+            <Button
+              onClick={loadNotifications}
+              size="sm"
+              variant="outline"
+              disabled={isLoading}
+              className="border-white/10 text-gray-400 hover:text-white hover:border-cyan-500 backdrop-blur-sm hover:bg-white/10 transition-all duration-200 ease-out disabled:opacity-50"
+            >
+              {isLoading ? (
+                <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3 h-3 mr-1" />
+              )}
+              Refresh
+            </Button>
             <Button
               onClick={markAllAsRead}
               size="sm"

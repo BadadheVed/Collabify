@@ -12,5 +12,6 @@ var LoginRouter = (0, _express.Router)();
 LoginRouter.post("/login", _login.login);
 LoginRouter.post("/signup", _login.SignUp);
 LoginRouter.get("/me", _roles.checkAuth, _user.getAuth);
+LoginRouter.post("/logout", _login.logout);
 var _default = exports["default"] = LoginRouter;
 //# sourceMappingURL=auth.routes.js.map

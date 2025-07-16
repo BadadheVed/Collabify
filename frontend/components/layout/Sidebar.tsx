@@ -16,12 +16,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserInfo } from "@/hooks/userInfo";
-
+import { axiosInstance } from "@/axiosSetup/axios";
 interface SidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
 }
-
+import { useRouter } from "next/navigation";
 const sidebarItems = [
   {
     title: "Dashboard",
@@ -59,12 +59,28 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const data = useUserInfo();
   const [showLogoutDropdown, setShowLogoutDropdown] = useState(false);
+  const router = useRouter();
 
-  const handleLogout = () => {
-    // Add your logout logic here
-    console.log("Logging out...");
-    // Example: redirect to login page or call logout API
-    // window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      const response = await axiosInstance.post("/auth/logout");
+
+      if (response.data.success) {
+        // Clear sessionStorage (documents cache)
+        if (typeof window !== "undefined") {
+          sessionStorage.clear();
+        }
+
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Force logout even if API fails
+      if (typeof window !== "undefined") {
+        sessionStorage.clear();
+      }
+      router.push("/");
+    }
   };
 
   return (
