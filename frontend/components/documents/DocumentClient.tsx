@@ -355,7 +355,26 @@ export function DocumentsClient() {
             </h2>
             <p className="text-gray-400 mt-1">Documents you have access to</p>
           </div>
-          <CreateDocumentClient onDocumentCreated={handleDocumentCreated} />
+          <div className="flex gap-3">
+            {/* Refresh Button */}
+            <Button
+              onClick={refreshDocuments}
+              disabled={isRefreshing || isCooldownActive}
+              variant="outline"
+              className="flex items-center gap-2 backdrop-blur-xl bg-white/5 border border-white/10 hover:border-cyan-500/50 hover:bg-cyan-500/20 hover:text-cyan-400 transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRefreshing ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : isCooldownActive ? (
+                `${cooldown}s`
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              <span>Refresh</span>
+            </Button>
+
+            <CreateDocumentClient onDocumentCreated={handleDocumentCreated} />
+          </div>
         </div>
 
         <Card className="backdrop-blur-xl bg-white/5 border border-white/10 p-8 text-center rounded-2xl">
@@ -365,9 +384,24 @@ export function DocumentsClient() {
             <h3 className="text-lg font-medium text-white mb-2">
               No Documents Yet
             </h3>
-            <p className="text-gray-400">
+            <p className="text-gray-400 mb-4">
               Create your first document to start collaborating with your team.
             </p>
+            <Button
+              onClick={refreshDocuments}
+              disabled={isRefreshing || isCooldownActive}
+              variant="outline"
+              className="flex items-center gap-2 backdrop-blur-xl bg-white/5 border border-white/10 hover:border-cyan-500/50 hover:bg-cyan-500/20 hover:text-cyan-400 transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
+            >
+              {isRefreshing ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : isCooldownActive ? (
+                `${cooldown}s`
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              <span>Try Again</span>
+            </Button>
           </div>
         </Card>
       </div>
