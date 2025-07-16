@@ -483,9 +483,13 @@ export const getUserDocuments = async (req: Request, res: Response) => {
       teamId: d.team.id,
       content: d.content,
       teamName: d.team.name,
-      updatedAt: d.updatedAt,
-      createdAt: d.createdAt,
+      updatedAt: d.updatedAt.toISOString(), // Convert to string
+      createdAt: d.createdAt.toISOString(), // Convert to string
+      type: "markdown", // Add default type
     }));
+    console.log(
+      `Found ${formattedDocuments.length} documents for user ${userId}`
+    );
 
     res.status(200).json({
       success: true,

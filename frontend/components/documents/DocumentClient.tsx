@@ -97,8 +97,9 @@ export function DocumentsClient() {
       if (cachedDocuments) {
         setDocuments(JSON.parse(cachedDocuments));
         setIsLoading(false);
+        console.log("user docs loaded from the cache memory");
       }
-
+      console.log("fetching User Documents");
       const response = await axiosInstance.get("/documents/UserDocuments");
       if (response.data.success) {
         const docsWithSize = response.data.documents.map((doc: any) => ({
@@ -109,14 +110,17 @@ export function DocumentsClient() {
         }));
 
         setDocuments(docsWithSize);
+        console.log("fetching User Documents done");
 
         // Only update sessionStorage in client-side
         if (typeof window !== "undefined") {
           sessionStorage.setItem("documents", JSON.stringify(docsWithSize));
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch documents:", error);
+      // Add this line to see the actual error response
+      console.error("Error response:", error.response?.data);
     } finally {
       setIsLoading(false);
     }
@@ -291,12 +295,12 @@ export function DocumentsClient() {
     setIsRefreshing(true);
     try {
       // Simulate API call to refresh documents
-
+      console.log("refreshing documents ");
       const response = await axiosInstance.get("/documents/UserDocuments");
       if (response.data.success) {
         setDocuments(response.data.documents);
       }
-
+      console.log(" documents refreshed ");
       // Activate cooldown
       setIsCooldownActive(true);
       setCooldown(30);

@@ -663,10 +663,14 @@ var getUserDocuments = exports.getUserDocuments = /*#__PURE__*/function () {
               teamId: d.team.id,
               content: d.content,
               teamName: d.team.name,
-              updatedAt: d.updatedAt,
-              createdAt: d.createdAt
+              updatedAt: d.updatedAt.toISOString(),
+              // Convert to string
+              createdAt: d.createdAt.toISOString(),
+              // Convert to string
+              type: "markdown" // Add default type
             };
           });
+          console.log("Found ".concat(formattedDocuments.length, " documents for user ").concat(userId));
           res.status(200).json({
             success: true,
             documents: formattedDocuments
