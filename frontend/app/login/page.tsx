@@ -48,7 +48,10 @@ function LoginForm() {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
         formData,
         {
-          timeout: 10000, // 10 second timeout
+          headers: {
+            "Content-Type": "application/json",
+          },
+          // 10 second timeout
           withCredentials: true, // Include cookies in request
         }
       );
