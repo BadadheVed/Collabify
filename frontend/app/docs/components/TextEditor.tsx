@@ -468,7 +468,7 @@ export function Editor() {
           Save
         </Button>
         <Button
-          onClick={() => setIsAiPanelOpen(true)}
+          onClick={() => setIsAiPanelOpen(!isAiPanelOpen)}
           variant="outline"
           size="sm"
           className="ml-2 flex items-center gap-1 bg-grey-800"
