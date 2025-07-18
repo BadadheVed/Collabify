@@ -36,7 +36,7 @@ Collabify is a comprehensive collaboration platform designed to transform how te
 - **Express** - Web framework for RESTful API development
 - **Socket.io** - Real-time bidirectional event-based communication
 
-- **AI Integration** - Advanced AI models for writing assistance and content suggestions
+- **Gemini Integration** - Gemini AI models for writing assistance and content suggestions and many more
 - **Zod** - Schema validation for API endpoints and data integrity
 
 ### Frontend
@@ -46,7 +46,7 @@ Collabify is a comprehensive collaboration platform designed to transform how te
 - **Tailwind CSS** - Utility-first CSS framework for responsive design
 - **Socket.io Client** - Real-time communication with the backend
 - **TipTap Text Editor** - Advanced text editing capabilities with collaborative features
-- **Framer Motion** - Smooth animations and transitions
+
 
 ## Deployment
 
