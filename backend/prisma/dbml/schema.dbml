@@ -1,0 +1,205 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table User {
+  id String [pk]
+  email String [unique, not null]
+  password String [not null]
+  name String [not null]
+  teams TeamMember [not null]
+  tasks Task [not null]
+  comments Comment [not null]
+  notifications Notification [not null]
+  sentInvites Invite [not null]
+  receivedInvites Invite [not null]
+  createdAt DateTime [default: `now()`, not null]
+  Team Team [not null]
+  Invite Invite [not null]
+  Project Project [not null]
+  Task Task [not null]
+  documents Document [not null]
+  ProjectMember ProjectMember [not null]
+}
+
+Table Team {
+  id String [pk]
+  name String [not null]
+  createdBy String [not null]
+  creator User [not null]
+  projectId String [not null]
+  project Project [not null]
+  members TeamMember [not null]
+  invites Invite [not null]
+  documents Document [not null]
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table ProjectMember {
+  id String [pk]
+  user User [not null]
+  userId String [not null]
+  project Project [not null]
+  projectId String [not null]
+  role Role [not null, default: 'MEMBER']
+  joinedAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (userId, projectId) [unique]
+  }
+}
+
+Table TeamMember {
+  id String [pk]
+  user User [not null]
+  userId String [not null]
+  team Team [not null]
+  teamId String [not null]
+  role Role [not null, default: 'MEMBER']
+  joinedAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (userId, teamId) [unique]
+  }
+}
+
+Table Project {
+  id String [pk]
+  name String [not null]
+  description String
+  createdBy User [not null]
+  createdById String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  Task Task [not null]
+  teams Team [not null]
+  ProjectMember ProjectMember [not null]
+}
+
+Table Task {
+  id String [pk]
+  title String [not null]
+  description String
+  status TaskStatus [not null, default: 'TODO']
+  priority Int [not null, default: 1]
+  dueDate DateTime
+  assignee User
+  assigneeId String
+  project Project [not null]
+  projectId String [not null]
+  assignedTo User [not null]
+  assignedToId String [not null]
+  comments Comment [not null]
+  attachments Attachment [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Attachment {
+  id String [pk]
+  url String [not null]
+  task Task [not null]
+  taskId String [not null]
+  uploadedAt DateTime [default: `now()`, not null]
+}
+
+Table Comment {
+  id String [pk]
+  content String [not null]
+  task Task [not null]
+  taskId String [not null]
+  author User [not null]
+  authorId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table Notification {
+  id String [pk]
+  message String [not null]
+  user User [not null]
+  userId String [not null]
+  read Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  expiresAt DateTime [not null]
+}
+
+Table Invite {
+  id String [pk]
+  token String [unique, not null]
+  email String
+  role Role [not null, default: 'MEMBER']
+  team Team [not null]
+  teamId String [not null]
+  invitedBy User [not null]
+  invitedById String [not null]
+  invitedUser User
+  invitedUserId String
+  expiresAt DateTime [not null]
+  used Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  User User
+  userId String
+}
+
+Table Document {
+  id String [pk]
+  title String [not null]
+  content Json
+  teamId String [not null]
+  team Team [not null]
+  updatedAt DateTime [not null]
+  createdAt DateTime [default: `now()`, not null]
+  ownerId String [not null]
+  owner User [not null]
+}
+
+Enum Role {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+Enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+Ref: Team.createdBy > User.id
+
+Ref: Team.projectId > Project.id
+
+Ref: ProjectMember.userId > User.id
+
+Ref: ProjectMember.projectId > Project.id
+
+Ref: TeamMember.userId > User.id
+
+Ref: TeamMember.teamId > Team.id
+
+Ref: Project.createdById > User.id
+
+Ref: Task.assigneeId > User.id
+
+Ref: Task.projectId > Project.id
+
+Ref: Task.assignedToId > User.id
+
+Ref: Attachment.taskId > Task.id
+
+Ref: Comment.taskId > Task.id
+
+Ref: Comment.authorId > User.id
+
+Ref: Notification.userId > User.id
+
+Ref: Invite.teamId > Team.id
+
+Ref: Invite.invitedById > User.id
+
+Ref: Invite.invitedUserId > User.id
+
+Ref: Invite.userId > User.id
+
+Ref: Document.teamId > Team.id
+
+Ref: Document.ownerId > User.id
