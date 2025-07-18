@@ -4,7 +4,7 @@ import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import { DashboardProvider } from "@/context/DashboardContext";
 const inter = Inter({ subsets: ["latin"] });
-
+import { SpeedInsights } from "@vercel/speed-insights/next";
 export const metadata: Metadata = {
   title: "Collabify",
   description: "Real Time Editor",
@@ -24,6 +24,7 @@ export default function RootLayout({
         <body className={inter.className}>
           {children}
           <Toaster />
+          <SpeedInsights/>
         </body>
       </html>
     </DashboardProvider>
