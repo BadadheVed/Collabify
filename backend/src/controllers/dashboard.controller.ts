@@ -1,9 +1,9 @@
 import { db } from "@/DB_Client/db";
 import { Request, Response, RequestHandler } from "express";
-
+import redisClient from "@/redis/client";
 export const getTileData = async (req: Request, res: Response) => {
   const userId = req.user?.id;
-
+  
   if (!userId) {
     res.status(401).json({ message: "Unauthorized" });
     return;

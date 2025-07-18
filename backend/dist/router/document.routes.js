@@ -7,6 +7,7 @@ exports["default"] = void 0;
 var _express = require("express");
 var _document = require("../controllers/document.controller");
 var _roles = require("../middlewares/roles");
+var _gemini = require("../controllers/gemini.controller");
 var documentRouter = (0, _express.Router)();
 
 // Apply checkAuth middleware to all document routes
@@ -35,5 +36,6 @@ documentRouter.patch("/save/:id", _document.SaveDocument);
 // Delete a document
 // DELETE /documents/:id
 documentRouter["delete"]("/:id", _document.deleteDocument);
+documentRouter.post("/gemini", _gemini.GeminiResponse);
 var _default = exports["default"] = documentRouter;
 //# sourceMappingURL=document.routes.js.map
