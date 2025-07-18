@@ -4,7 +4,7 @@
 
 > The ultimate collaboration platform that brings teams together with real-time editing, AI assistance, and seamless project management.
 
-## Solution
+## Description
 
 Collabify is a comprehensive collaboration platform designed to transform how teams work together. Built for modern teams, it combines real-time document editing, AI-powered writing assistance, and intuitive project management in one seamless experience. Whether you're creating content, managing projects, or collaborating across time zones, Collabify provides the tools you need to work efficiently and stay connected.
 
