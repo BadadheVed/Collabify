@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Collabify",
   description: "Real Time Editor",
+  icons: {
+    icon: "/collabify.png",
+  },
 };
 
 export default function RootLayout({
