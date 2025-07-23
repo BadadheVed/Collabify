@@ -46,6 +46,13 @@ app.use("/tasks", _tasks["default"]);
 app.use("/notifications", _notification["default"]);
 app.use("/projects", _project["default"]);
 app.use("/liveblocks", _liveblocks["default"]);
+app.get("/", function (req, res) {
+  res.json({
+    message: "This is the Collabify Backend Application and you're at the Unauthorised route of the Collabify (i.e - `/`)",
+    success: true
+  });
+  return;
+});
 var PORT = Number(process.env.PORT) || 5000;
 
 // FIXED: Added '0.0.0.0' host binding for Render

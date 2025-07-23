@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createServer } from "http";
+import type { Request, Response } from "express";
 
 // Load environment variables first
 dotenv.config();
@@ -57,7 +58,14 @@ app.use("/tasks", taskRouter);
 app.use("/notifications", notificationRouter);
 app.use("/projects", projectRouter);
 app.use("/liveblocks", liveblocksRouter);
-
+app.get("/", (req: Request, res: Response) => {
+  res.json({
+    message:
+      "This is the Collabify Backend Application and you're at the Unauthorised route of the Collabify (i.e - `/`)",
+    success: true,
+  });
+  return;
+});
 const PORT = Number(process.env.PORT) || 5000;
 
 // FIXED: Added '0.0.0.0' host binding for Render
