@@ -1,14 +1,13 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { askGemini } from "@/services/gemini.service";
+import { askGroq } from "@/services/groq.service";
 import { Request, Response } from "express";
 
-const GEMINI_API = process.env.GEMINI_API;
+const GROQ_API = process.env.GROQ_API;
 
-export const GeminiResponse = async (req: Request, res: Response) => {
-  if (!GEMINI_API) {
+export const GroqResponse = async (req: Request, res: Response) => {
+  if (!GROQ_API) {
     res.status(404).json({
       success: false,
-      message: "Gemini Key Not Found",
+      message: "Groq API Key Not Found",
     });
     return;
   }
@@ -21,23 +20,41 @@ export const GeminiResponse = async (req: Request, res: Response) => {
   }
 
   try {
-    // Create a comprehensive prompt using the message and context
+    // Enhanced prompt with document collaboration capabilities
     let prompt = message;
 
     if (context?.documentContent) {
-      prompt = `Context: The user is working on a document with the following content:
-"${context.documentContent}"
+      prompt = `You are an AI assistant specialized in document collaboration and productivity. You can help with:
+- Summarizing documents (brief, detailed, or executive summaries)
+- Extracting key points and main ideas
+- Answering questions about document content
+- Improving text quality and clarity
+- Creating outlines and structure
+- Grammar and style suggestions
+- Writing assistance and enhancement
 
-User's question: ${message}
+Document Context: "${context.documentContent}"
 
-Please provide a helpful response based on the document context and the user's question.`;
+User's Request: ${message}
+
+Please provide a helpful, accurate, and contextual response. If the user asks for a summary, provide it in a clear format. If they ask for improvements, be specific and actionable. If they have questions, answer based on the document content.`;
+    } else {
+      // For general questions without document context
+      prompt = `You are an AI assistant specialized in document collaboration and productivity. 
+
+User's Request: ${message}
+
+Please provide a helpful and accurate response. You can assist with writing, editing, summarizing, outlining, and general document-related tasks.`;
     }
 
-    const response = await askGemini(prompt);
+    const response = await askGroq(prompt);
     res.status(200).json({ response });
   } catch (error) {
-    console.error("Gemini API error:", error);
-    res.status(500).json({ error: "Failed to get response from Gemini" });
+    console.error("Groq API error:", error);
+    res.status(500).json({
+      error: "Failed to get response from Groq",
+      response: "Sorry, I encountered an error. Please try again.",
+    });
     return;
   }
 };

@@ -36,6 +36,6 @@ documentRouter.patch("/save/:id", _document.SaveDocument);
 // Delete a document
 // DELETE /documents/:id
 documentRouter["delete"]("/:id", _document.deleteDocument);
-documentRouter.post("/gemini", _gemini.GeminiResponse);
+documentRouter.post("/gemini", _gemini.GroqResponse);
 var _default = exports["default"] = documentRouter;
 //# sourceMappingURL=document.routes.js.map

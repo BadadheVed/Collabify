@@ -9,7 +9,7 @@ import {
   getUserDocuments,
 } from "@/controllers/document.controller";
 import { checkAuth } from "@/middlewares/roles";
-import { GeminiResponse } from "@/controllers/gemini.controller";
+import { GroqResponse } from "@/controllers/gemini.controller";
 
 const documentRouter = Router();
 
@@ -39,6 +39,6 @@ documentRouter.patch("/save/:id", SaveDocument);
 // Delete a document
 // DELETE /documents/:id
 documentRouter.delete("/:id", deleteDocument);
-documentRouter.post("/gemini", GeminiResponse);
+documentRouter.post("/gemini", GroqResponse);
 
 export default documentRouter;
