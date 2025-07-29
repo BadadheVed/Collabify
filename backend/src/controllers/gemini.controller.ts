@@ -4,8 +4,6 @@ import { Request, Response } from "express";
 
 const GEMINI_API = process.env.GEMINI_API;
 
-
-
 export const GeminiResponse = async (req: Request, res: Response) => {
   if (!GEMINI_API) {
     res.status(404).json({

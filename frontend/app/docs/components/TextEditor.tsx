@@ -489,11 +489,16 @@ export function Editor() {
         {isAiPanelOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-30 flex items-center justify-center">
             <div
-              className="bg-white rounded-lg shadow-2xl w-[600px] flex flex-col"
-              style={{ maxHeight: "90vh" }}
+              className="bg-white rounded-lg shadow-2xl flex flex-col"
+              style={{
+                width: "600px",
+                height: "80vh", // Fixed height
+                maxHeight: "600px", // Maximum height constraint
+                minHeight: "400px", // Minimum height constraint
+              }}
             >
-              {/* Header */}
-              <div className="bg-blue-600 text-white p-4 flex items-center justify-between rounded-t-lg">
+              {/* Header - Fixed height */}
+              <div className="bg-blue-600 text-white p-4 flex items-center justify-between rounded-t-lg flex-shrink-0">
                 <div className="flex items-center space-x-2">
                   <Bot className="w-6 h-6" />
                   <h2 className="text-lg font-semibold">AI Assistant</h2>
@@ -520,13 +525,16 @@ export function Editor() {
                 </div>
               </div>
 
-              {/* Content */}
+              {/* Content - Takes remaining space */}
               {!isAiPanelMinimized && (
-                <div className="flex flex-col flex-1 min-h-0">
-                  {/* Messages Area */}
+                <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                  {/* Messages Area - Fixed scrollable area */}
                   <div
                     className="flex-1 overflow-y-auto p-4 space-y-4"
-                    style={{ maxHeight: "65vh" }}
+                    style={{
+                      minHeight: 0, // Important for flex child to shrink
+                      maxHeight: "none", // Remove the previous maxHeight constraint
+                    }}
                   >
                     {messages.length === 0 && (
                       <div className="text-center text-gray-500 mt-8">
@@ -544,11 +552,16 @@ export function Editor() {
                         className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`max-w-lg px-4 py-2 rounded-lg ${
+                          className={`max-w-[80%] px-4 py-2 rounded-lg break-words ${
                             message.sender === "user"
                               ? "bg-blue-600 text-white"
                               : "bg-gray-100 text-gray-800"
                           }`}
+                          style={{
+                            wordWrap: "break-word",
+                            overflowWrap: "break-word",
+                            hyphens: "auto",
+                          }}
                         >
                           <div className="flex items-start space-x-2">
                             {message.sender === "ai" && (
@@ -557,7 +570,7 @@ export function Editor() {
                             {message.sender === "user" && (
                               <User className="w-4 h-4 mt-0.5 flex-shrink-0" />
                             )}
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               {editingMessageId === message.id ? (
                                 <div className="space-y-2">
                                   <textarea
@@ -569,6 +582,10 @@ export function Editor() {
                                     onKeyPress={handleEditKeyPress}
                                     className="w-full p-2 border rounded text-gray-800 text-sm resize-none"
                                     rows={3}
+                                    style={{
+                                      minHeight: "60px",
+                                      maxHeight: "120px",
+                                    }}
                                   />
                                   <div className="flex space-x-2">
                                     <button
@@ -587,7 +604,7 @@ export function Editor() {
                                 </div>
                               ) : (
                                 <div>
-                                  <p className="text-sm whitespace-pre-wrap">
+                                  <p className="text-sm whitespace-pre-wrap break-words">
                                     {message.text}
                                   </p>
                                   <p className="text-xs opacity-70 mt-1">
@@ -654,7 +671,7 @@ export function Editor() {
 
                     {isLoading && (
                       <div className="flex justify-start">
-                        <div className="bg-gray-100 text-gray-800 max-w-lg px-4 py-2 rounded-lg">
+                        <div className="bg-gray-100 text-gray-800 max-w-[80%] px-4 py-2 rounded-lg">
                           <div className="flex items-center space-x-2">
                             <Bot className="w-4 h-4" />
                             <div className="flex space-x-1">
@@ -676,8 +693,8 @@ export function Editor() {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Input Area */}
-                  <div className="border-t bg-gray-50 p-4 rounded-b-lg">
+                  {/* Input Area - Fixed height at bottom */}
+                  <div className="border-t bg-gray-50 p-4 rounded-b-lg flex-shrink-0">
                     <div className="flex items-center space-x-2 mb-2">
                       <button
                         onClick={clearChat}
@@ -691,19 +708,18 @@ export function Editor() {
                       <textarea
                         ref={inputRef}
                         value={inputValue}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                          setInputValue(e.target.value)
-                        }
+                        onChange={(e) => setInputValue(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Type your message..."
                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                         rows={2}
                         disabled={isLoading}
+                        style={{ maxHeight: "80px" }}
                       />
                       <button
                         onClick={handleSendMessage}
                         disabled={!inputValue.trim() || isLoading}
-                        className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                       >
                         <Send className="w-5 h-5" />
                       </button>
