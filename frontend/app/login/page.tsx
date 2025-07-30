@@ -258,11 +258,6 @@ function LoginForm() {
             </form>
 
             {/* Divider */}
-            <div className="my-6 flex items-center">
-              <div className="flex-1 border-t border-gray-600"></div>
-              <span className="px-4 text-gray-400 text-sm">or</span>
-              <div className="flex-1 border-t border-gray-600"></div>
-            </div>
 
             {/* Sign Up Link */}
             <p className="text-center text-gray-400 mt-8">

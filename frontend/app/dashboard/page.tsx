@@ -578,13 +578,6 @@ export default function DashboardPage() {
           >
             {tileDataLoading ? "Refreshing..." : "Refresh Data"}
           </Button>
-          <Button
-            className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-200 ease-out backdrop-blur-sm border border-white/10"
-            onClick={() => handleActivityThatChangesData("create_project")}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Project
-          </Button>
         </div>
       </div>
 

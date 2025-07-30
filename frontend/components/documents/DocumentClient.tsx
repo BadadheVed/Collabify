@@ -7,9 +7,7 @@ import {
   Search,
   Filter,
   FileText,
-  Download,
   Share,
-  MoreHorizontal,
   Grid,
   List,
   Calendar,
@@ -618,30 +616,6 @@ export function DocumentsClient() {
                     >
                       <IconComponent className="w-6 h-6" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDocumentAction("share", document.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-200 ease-out hover:scale-105"
-                      >
-                        <Share className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Handle more actions menu
-                        }}
-                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-200 ease-out hover:scale-105"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
                   </div>
 
                   <div>
@@ -701,41 +675,6 @@ export function DocumentsClient() {
                           <h3 className="font-medium text-white group-hover:text-cyan-400 transition-colors duration-200 ease-out truncate">
                             {document.title}
                           </h3>
-                          <div className="flex items-center gap-2 ml-4">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDocumentAction("download", document.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-200 ease-out hover:scale-105"
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDocumentAction("share", document.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-200 ease-out hover:scale-105"
-                            >
-                              <Share className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle more actions menu
-                              }}
-                              className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-200 ease-out hover:scale-105"
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </div>
                         </div>
 
                         <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
